@@ -1,5 +1,6 @@
 module Symmath.Terms where
 
+import Data.Char (toLower)
 import Symmath.Constants
 
 -- Data types
@@ -23,7 +24,7 @@ data SymTerm = Number Double
 
 data Constant = Euler | Pi | Phi deriving (Eq, Show)
 
-data Trigo = Sin | Cos | Tan deriving Eq
+data Trigo = Sin | Cos | Tan deriving (Eq, Show)
 
 -- Instances
 
@@ -43,6 +44,7 @@ instance Show SymTerm where
     show (Log base term) = "log(" ++ show base ++ "," ++ show term ++ ")"
     show (Abs term) = '|' : show term ++ "|"
     show (Signum term) = "sgn(" ++ show term ++ ")"
+    show (Trigo trigo term1) = (map toLower $ show trigo) ++ "(" ++ show term1 ++ ")"
 
 instance Num SymTerm where
     (+) = Sum
