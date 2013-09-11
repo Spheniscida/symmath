@@ -15,6 +15,7 @@ data SymTerm = Number Double
              | Power SymTerm SymTerm
              | Exp SymTerm
              | Trigo Trigo SymTerm
+             | Root SymTerm SymTerm
             deriving Eq
 
 data Constant = Euler | Pi | Tau deriving (Eq, Show)
@@ -30,9 +31,11 @@ instance Show SymTerm where
     show (Negative term) = '-' : show term
     show (Product term1 term2) = (show term1) ++ " * " ++ (show term2)
     show (Sum term1 term2) = '(' : (show term1) ++ " + " ++ (show term2) ++ ")"
+    show (Difference term1 term2) = '(' : (show term1) ++ " - " ++ (show term2) ++ ")"
     show (Fraction term1 term2) = '(' : (show term1) ++ " / " ++ (show term2) ++ ")"
     show (Power term1 term2) = (show term1) ++ "^(" ++ (show term2) ++ ")"
-    show (Exp term1) = "e^(" ++ show term1 ++ ")"
+    show (Exp term1) = "exp(" ++ show term1 ++ ")"
+    show (Root term1 term2) = "sqrt(" ++ (show term1) ++ ")(" ++ (show term2) ++ ")"
 
 constToNumber :: Constant -> Double
 constToNumber Euler = euler
