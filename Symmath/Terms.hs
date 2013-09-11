@@ -17,7 +17,7 @@ data SymTerm = Number Double
              | Trigo Trigo SymTerm
             deriving Eq
 
-data Constant = Euler | Pi | Tau deriving Eq
+data Constant = Euler | Pi | Tau deriving (Eq, Show)
 
 data Trigo = Sin | Cos | Tan deriving Eq
 
@@ -33,11 +33,6 @@ instance Show SymTerm where
     show (Fraction term1 term2) = '(' : (show term1) ++ " / " ++ (show term2) ++ ")"
     show (Power term1 term2) = (show term1) ++ "^(" ++ (show term2) ++ ")"
     show (Exp term1) = "e^(" ++ show term1 ++ ")"
-
-instance Show Constant where
-    show Euler = show euler
-    show Pi = show pi
-    show Tau = show tau
 
 constToNumber :: Constant -> Double
 constToNumber Euler = euler
