@@ -1,46 +1,58 @@
 module Symmath.Parse where
 
-{-
-import Symmath.Terms hiding (Sum)
-import qualified Symmath.Terms as ST (SymTerm(Sum))
+import Control.Applicative
+import Numeric (readFloat, readSigned)
+import Text.ParserCombinators.Parsec hiding (many, optional, (<|>))
+import Text.ParserCombinators.Parsec.Expr
 
-data PTerm = Val Val
-	   | UnOp UnOp PTerm
-	   | BinOp BinOp PTerm PTerm
-	   | Undef
-	   deriving Eq
+import Symmath.Terms
+import Symmath.Util (eitherToMaybe)
 
-data Val = Num Double
-	 | Var Char
-	 | Const Constant
-	 deriving Eq
 
--- Const -> Constant.
+type SymParser = Parser SymTerm
 
-data UnOp = Neg
-    deriving Eq
+parseStr :: String -> Maybe SymTerm
+parseStr = eitherToMaybe . parse expr ""
 
-data BinOp = Sum
-	   | Diff
-	   | Prod
-	   | Frac
-	   | Pow
-	   deriving Eq
+expr :: SymParser
+expr = buildExpressionParser opTable term
 
-mConvertToSym :: (SymTerm -> SymTerm -> SymTerm) -> PTerm -> PTerm -> Maybe SymTerm
-mConvertToSym f t1 t2 = pTermToSym t1 >>= \et1 -> pTermToSym t2 >>= \et2 -> Just $ f et1 et2
+opTable :: OperatorTable Char () SymTerm
+opTable = [[Infix (Power <$ char '^') AssocLeft]
+          ,[Infix (Product <$ char '*') AssocLeft, Infix (Fraction <$ char '/') AssocLeft]
+          ,[Infix (Sum <$ char '+') AssocLeft, Infix (Difference <$ char '-') AssocLeft]
+          ]
 
-pTermToSym :: PTerm -> Maybe SymTerm
-pTermToSym (Val (Num n)) = Just $ Number n
-pTermToSym (Val (Var v)) = Just $ Variable v
-pTermToSym (Val (Const c)) = Just $ Constant c
+term :: SymParser
+term = parens
+   <|> mathFun
+   <|> mathConst
+   <|> var
+   <|> num
 
-pTermToSym (UnOp Neg t) = pTermToSym t >>= \et -> Just $ Negative et
+parens :: SymParser
+parens = char '(' *> expr <* char ')'
 
-pTermToSym (BinOp Sum t1 t2)  = mConvertToSym (ST.Sum) t1 t2
-pTermToSym (BinOp Diff t1 t2) = mConvertToSym (Difference) t1 t2
-pTermToSym (BinOp Prod t1 t2) = mConvertToSym (Product) t1 t2
-pTermToSym (BinOp Frac t1 t2) = mConvertToSym (Fraction) t1 t2
-pTermToSym (BinOp Pow t1 t2)= mConvertToSym (Power) t1 t2
+mathFun :: SymParser
+mathFun = funName <*> parens
 
--}
+funName :: Parser (SymTerm -> SymTerm)
+funName = Exp       <$ string "exp"
+      <|> Trigo Sin <$ string "sin"
+      <|> Trigo Cos <$ string "cos"
+      <|> Trigo Tan <$ string "tan"
+
+mathConst :: SymParser
+mathConst = Constant Euler <$ char 'e'
+        <|> Constant Phi   <$ string "phi"
+        <|> Constant Pi    <$ string "pi"
+
+var :: SymParser
+var = Variable <$> letter
+
+-- Taken from "Real World Haskell", Chap. 16
+num :: SymParser
+num = do s <- getInput
+         case readSigned readFloat s of
+              [(n, s')] -> Number n <$ setInput s'
+              _         -> empty
