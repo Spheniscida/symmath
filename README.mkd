@@ -1,0 +1,13 @@
+# Symmath
+
+Well, you've landed here and may be asking yourself now: What is this here? A CAS? An equation solver?
+Some kind of magic math software?
+
+The answer is: A bit of everything. We're trying to develop something (a library? An application? dunno...) which
+is able to manipulate mathematical terms and equations.
+
+The question is: How does it manipulate them? There's no simple answer to that. It's kind of a framework with the basic
+data types to represent terms and equations. We're putting some functions around it which may transform such terms, e.g.
+derivate or simplify them.
+
+If you would like to participate, it's not hard! Write your own function, add some clauses to the functions... Fork us :)
