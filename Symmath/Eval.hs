@@ -16,9 +16,13 @@ evalTerm :: SymTerm -> Maybe Double
 evalTerm (Variable _) = Nothing
 evalTerm (Constant c) = Just . constToNumber $ c
 evalTerm (Number n) = Just n
-evalTerm (Negative n) = mEvalUnary ((-1)*) n
 evalTerm (Sum t1 t2) = mEvalBinary (+) t1 t2 
+evalTerm (Difference t1 t2) = mEvalBinary (-) t1 t2
 evalTerm (Product t1 t2) = mEvalBinary (*) t1 t2
 evalTerm (Fraction t1 t2) = mEvalBinary (/) t1 t2
 evalTerm (Power t1 t2) = mEvalBinary (**) t1 t2
 evalTerm (Exp t1) = mEvalUnary (euler**) t1
+evalTerm (Trigo f t1) = case f of
+                            Sin -> mEvalUnary sin t1
+                            Cos -> mEvalUnary cos t1
+                            Tan -> mEvalUnary tan t1

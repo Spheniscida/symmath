@@ -1,5 +1,6 @@
 module Symmath.Parse where
 
+{-
 import Symmath.Terms hiding (Sum)
 import qualified Symmath.Terms as ST (SymTerm(Sum))
 
@@ -41,3 +42,5 @@ pTermToSym (BinOp Diff t1 t2) = mConvertToSym (Difference) t1 t2
 pTermToSym (BinOp Prod t1 t2) = mConvertToSym (Product) t1 t2
 pTermToSym (BinOp Frac t1 t2) = mConvertToSym (Fraction) t1 t2
 pTermToSym (BinOp Pow t1 t2)= mConvertToSym (Power) t1 t2
+
+-}
