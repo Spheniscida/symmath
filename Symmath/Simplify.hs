@@ -16,6 +16,7 @@ simplify l@(Log t1 t2) = Log (simplify t1) (simplify t2)
 simplify a@(Abs _) = simplifyAbs a
 simplify s@(Signum t) = Signum $ simplify t
 simplify e@(Exp _) = simplifyExp e
+simplify u@(UndefP d t) = UndefP d $ simplify t
 simplify a = a
 
 -- Special cases
@@ -32,7 +33,6 @@ simplifySum (Sum (Number n1) (Sum t1 (Number n2))) = simplify $ Sum (t1) (Number
 -- n1 + (n2 + x)
 simplifySum (Sum (Number n1) (Sum (Number n2) t1)) = simplify $ Sum (Number (n1 + n2)) t1
 simplifySum (Sum t1 t2) = Sum (simplify t1) (simplify t2)
-
 
 -- Products
 simplifyProd :: SymTerm -> SymTerm

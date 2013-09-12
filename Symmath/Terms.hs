@@ -18,6 +18,7 @@ data SymTerm = Number Double
              | Log SymTerm SymTerm
              | Abs SymTerm
              | Signum SymTerm
+             | UndefP Double SymTerm
             deriving Eq
 
 data Constant = Euler | Pi | Phi deriving (Eq, Show)
