@@ -16,7 +16,7 @@ evalTerm :: SymTerm -> Maybe Double
 evalTerm (Variable _) = Nothing
 evalTerm (Constant c) = Just . constToNumber $ c
 evalTerm (Number n) = Just n
-evalTerm (Sum t1 t2) = mEvalBinary (+) t1 t2 
+evalTerm (Sum t1 t2) = mEvalBinary (+) t1 t2
 evalTerm (Difference t1 t2) = mEvalBinary (-) t1 t2
 evalTerm (Product t1 t2) = mEvalBinary (*) t1 t2
 evalTerm (Fraction t1 t2) = mEvalBinary (/) t1 t2
