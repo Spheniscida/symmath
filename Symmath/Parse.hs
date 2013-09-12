@@ -38,6 +38,7 @@ mathFun = funName <*> parens
 
 funName :: Parser (SymTerm -> SymTerm)
 funName = Exp       <$ string "exp"
+      <|> Ln        <$ string "ln"
       <|> Trigo Sin <$ string "sin"
       <|> Trigo Cos <$ string "cos"
       <|> Trigo Tan <$ string "tan"
