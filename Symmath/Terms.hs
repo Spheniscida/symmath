@@ -53,6 +53,11 @@ instance Num SymTerm where
     fromInteger = Number . fromIntegral
     signum = Signum
 
+instance Fractional SymTerm where
+    t1 / t2 = Fraction t1 t2
+    recip t = Fraction (Number 1) t
+    fromRational = Number . fromRational
+
 -- Helper
 constToNumber :: Constant -> Double
 constToNumber Euler = euler
