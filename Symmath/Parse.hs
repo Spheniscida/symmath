@@ -24,7 +24,10 @@ opTable = [[Infix (Power <$ char '^') AssocLeft]
           ]
 
 term :: SymParser
-term = parens
+term = spaces *> mathTerm <* spaces
+
+mathTerm :: SymParser
+mathTerm = parens
    <|> mathFun
    <|> mathConst
    <|> var
