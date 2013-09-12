@@ -40,6 +40,8 @@ instance Show SymTerm where
     show (Exp term1) = "exp(" ++ show term1 ++ ")"
     show (Ln term1) = "ln(" ++ show term1 ++ ")"
     show (Log base term) = "log(" ++ show base ++ "," ++ show term ++ ")"
+    show (Abs term) = '|' : show term ++ "|"
+    show (Signum term) = "sgn(" ++ show term ++ ")"
 
 instance Num SymTerm where
     (+) = Sum
