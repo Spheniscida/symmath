@@ -57,7 +57,6 @@ instance Num SymTerm where
 
 instance Fractional SymTerm where
     t1 / t2 = Fraction t1 t2
-    recip t = Fraction (Number 1) t
     fromRational = Number . fromRational
 
 -- Helper
