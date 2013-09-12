@@ -63,5 +63,6 @@ simplifyPow :: SymTerm -> SymTerm
 -- Multiple power
 simplifyPow (Power (Power b1 e1) e2) = simplify $ Power b1 (Product e1 e2)
 simplifyPow (Power b (Number 0)) = Number 1
+simplifyPow (Power b (Number 1)) = b
 simplifyPow (Power t1 t2) = Power (simplify t1) (simplify t2)
 

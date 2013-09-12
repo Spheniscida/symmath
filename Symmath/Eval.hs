@@ -26,3 +26,6 @@ evalTerm (Trigo f t1) = case f of
                             Sin -> mEvalUnary sin t1
                             Cos -> mEvalUnary cos t1
                             Tan -> mEvalUnary tan t1
+evalTerm (Ln t1) = mEvalUnary log t1
+evalTerm (Log t1 t2) = mEvalBinary logBase t1 t2
+evalTerm (Signum t1) = mEvalUnary signum t1

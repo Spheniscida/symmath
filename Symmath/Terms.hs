@@ -7,7 +7,6 @@ import Symmath.Constants
 data SymTerm = Number Double
              | Variable Char
              | Constant Constant
---             | Negative SymTerm
              | Product SymTerm SymTerm
              | Difference SymTerm SymTerm
              | Sum SymTerm SymTerm
@@ -15,7 +14,10 @@ data SymTerm = Number Double
              | Power SymTerm SymTerm
              | Exp SymTerm
              | Trigo Trigo SymTerm
---             | Root SymTerm SymTerm
+             | Ln SymTerm
+             | Log SymTerm SymTerm
+             | Abs SymTerm
+             | Signum SymTerm
             deriving Eq
 
 data Constant = Euler | Pi | Phi deriving (Eq, Show)
@@ -28,16 +30,27 @@ instance Show SymTerm where
     show (Number n) = show n
     show (Variable v) = [v]
     show (Constant c) = show c
---    Show (-1 * x) as (-x)
     show (Product (Number (-1)) term2) = "(-" ++ (show term2) ++ ")"
     show (Product term1 term2) = (show term1) ++ " * " ++ (show term2)
     show (Sum term1 (Product (Number (-1)) term2)) = '(' : (show term1) ++ " - " ++ (show term2) ++ ")"
     show (Sum term1 term2) = '(' : (show term1) ++ " + " ++ (show term2) ++ ")"
     show (Difference term1 term2) = '(' : (show term1) ++ " - " ++ (show term2) ++ ")"
     show (Fraction term1 term2) = '(' : (show term1) ++ " / " ++ (show term2) ++ ")"
-    show (Power term1 term2) = (show term1) ++ "^(" ++ (show term2) ++ ")"
+    show (Power term1 term2) = '(' : (show term1) ++ ")^(" ++ (show term2) ++ ")"
     show (Exp term1) = "exp(" ++ show term1 ++ ")"
+    show (Ln term1) = "ln(" ++ show term1 ++ ")"
+    show (Log base term) = "log(" ++ show base ++ "," ++ show term ++ ")"
 
+instance Num SymTerm where
+    (+) = Sum
+    (*) = Product
+    (-) = Difference
+    negate = Product (Number (-1))
+    abs = Abs
+    fromInteger = Number . fromIntegral
+    signum = Signum
+
+-- Helper
 constToNumber :: Constant -> Double
 constToNumber Euler = euler
 constToNumber Pi = pi
