@@ -1,4 +1,4 @@
-{-# LANGUAGE GADTs #-}
+{-# LANGUAGE GADTs, MultiParamTypeClasses #-}
 
 module Symmath.Terms where
 
@@ -47,6 +47,7 @@ data TrigoFun = Sin | Cos | Tan deriving (Eq, Show)
 -- Type classes and instances
 class (Show a) => SymTerm a where
 
+
 instance SymTerm Number where
 
 instance SymTerm Variable where
@@ -75,6 +76,11 @@ instance SymTerm Signum where
 
 instance SymTerm UndefP where
 
+
+simplify :: (SymTerm a, SymTerm b) => a -> b
+simplify (Sum (Number n1) (Number n2)) = Number $ n1+n2
+simplify (Product (Number n1) (Number n2)) = Number $ n1*n2
+simplify t = t
 
 --- Show instances
 
