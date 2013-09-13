@@ -21,6 +21,7 @@ evalTerm (Trigo f t1) = mEvalUnary (getTrigFun f) t1
 evalTerm (Ln t1) = mEvalUnary log t1
 evalTerm (Log t1 t2) = mEvalBinary logBase t1 t2
 evalTerm (Signum t1) = mEvalUnary signum t1
+evalTerm (Abs t) = evalTerm t >>= \et -> if et < 0 then Just $ et * (-1) else Just et
 
 -- Generic may-fail evaluation
 mEvalUnary :: (Double -> Double) -> SymTerm -> Maybe Double
@@ -55,6 +56,11 @@ evalP (Trigo f t) = rEvalUnary (getTrigFun f) t
 evalP (Ln t) = rEvalUnary log t
 evalP (Log t1 t2) = rEvalBinary logBase t1 t2
 evalP (Signum t) = rEvalUnary signum t
+evalP (Abs t) = evalP t >>= \et -> if Nothing /= et
+                                   then if fromMb et < 0
+                                        then return . Just $ (-1) * fromMb et
+                                        else return et
+                                   else return Nothing
 
 -- Like mEval{U,Bi}nary, but with the Reader monad
 
