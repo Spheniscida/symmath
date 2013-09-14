@@ -6,7 +6,7 @@ import Symmath.Constants
 -- Data types
 
 data SymTerm = Number Double
-             | Variable Char
+             | Variable Var
              | Constant Constant
              | Product SymTerm SymTerm
              | Difference SymTerm SymTerm
@@ -21,6 +21,8 @@ data SymTerm = Number Double
              | Signum SymTerm
              | UndefP Double SymTerm
             deriving Eq
+
+type Var = Char
 
 data Constant = Euler | Pi | Phi deriving (Eq, Show)
 
