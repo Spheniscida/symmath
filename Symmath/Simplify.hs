@@ -152,7 +152,7 @@ prodListIntersectTuple a b = let is = prodListIntersect a b in
                              (is, a \\ is, b \\ is)
 
 prodListIntersect :: Eq a => [a] -> [a] -> [a]
-prodListIntersect (x:xs) (y:ys) = if x == y
-                                  then x:(prodListIntersect xs $ delete y ys)
+prodListIntersect (x:xs) ys = if x `elem` ys
+                                  then x:(prodListIntersect xs $ delete x ys)
                                   else prodListIntersect xs ys
 prodListIntersect _ _ = []
