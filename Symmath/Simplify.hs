@@ -42,11 +42,11 @@ simplifySum (Sum (Sum (Number n1) t1) (Number n2)) = Sum t1 (Number (n1 + n2))
 simplifySum (Sum (Number n1) (Sum t1 (Number n2))) = Sum t1 (Number (n1 + n2))
 -- n1 + (n2 + x)
 simplifySum (Sum (Number n1) (Sum (Number n2) t1)) = Sum t1 (Number (n1 + n2))
+simplifySum (Sum t1@(Product _ _) t2@(Product _ _)) = case prodListIntersectTuple (prodToList t1) (prodToList t2) of
+                                                        ([],rest1,rest2) -> Sum (listToProd $ rest1) (listToProd $ rest2)
+                                                        (common,rest1,rest2) -> Product (listToProd common) (Sum (Product (Number 1) (listToProd rest1)) (Product (Number 1) (listToProd rest2)))
 simplifySum (Sum t1 t2) | t1 == t2 = Product (Number 2) t1
-                        | otherwise = case prodListIntersectTuple (prodToList t1) (prodToList t2) of
-                                        ([],rest1,rest2) -> Sum (listToProd $ rest1) (listToProd $ rest2)
-                                        (common,rest1,rest2) -> Product (listToProd common) (Sum (Product (Number 1) (listToProd rest1)) (Product (Number 1) (listToProd rest2)))
-
+                        | otherwise = Sum (simplifyOnce t1) (simplifyOnce t2)
 -- Products
 simplifyProd :: SymTerm -> SymTerm
 -- Plain numbers and terms
