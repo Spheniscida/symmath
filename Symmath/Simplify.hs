@@ -90,11 +90,11 @@ simplifyDiff (Difference t1 t2) = Sum (t1) (Product (Number (-1)) t2)
 
 -- Fractions
 simplifyFrac :: SymTerm -> SymTerm
+simplifyFrac (Fraction t1 t2) | t1 == t2 = Number 1
 simplifyFrac (Fraction (Number n1) (Number n2)) | isIntegral n1 && isIntegral n2 = Fraction
                                                                                     (Number (n1 / (fromInteger (gcd (round n1) (round n2)))))
                                                                                     (Number (n2 / (fromInteger (gcd (round n1) (round n2)))))
                                                 | otherwise = Number $ n1 / n2
-simplifyFrac (Fraction t1 t2) | t1 == t2 = Number 1
 simplifyFrac (Fraction e d) = Product (Power e (Number 1)) (Power d (Number (-1)))
 
 -- Powers
