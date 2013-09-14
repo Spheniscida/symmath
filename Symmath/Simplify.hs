@@ -66,9 +66,11 @@ simplifyProd (Product (Number n1) (Number n2)) = Number $ n1 * n2
 -- Equal-base powers: x^a * x^b = x^(a+b)
 simplifyProd (Product (Power b1 e1) (Power b2 e2)) | b1 == b2 = Power b1 (Sum e1 e2)
                                                    | otherwise = (Product (Power b1 e1) (Power b2 e2))
--- x * x = x^1
--- Transforms x^3 * (x^5 * y) to the left-associating (x^3 * x^5) * y
-simplifyProd (Product t1 (Product t2 t3)) = Product (Product t1 t2) t3
+simplifyProd (Product (Power b e) t) | b == t = Power b (Sum e (Number 1))
+simplifyProd (Product t (Power b e)) | b == t = Power b (Sum e (Number 1))
+-- Transforms x^3 * (x^5 * y) to the left-associating (x^3 * x^5) * y. But only if the second term can't be simplified anymore.
+simplifyProd (Product t1 p@(Product t2 t3)) | p == simplifyOnce p = Product (Product t1 t2) t3
+-- x * x = x^2
 simplifyProd (Product t1 t2) | t1 == t2 = (Power t1 (Number 2))
                              | otherwise = Product (simplifyOnce t1) (simplifyOnce t2)
 {-
@@ -133,6 +135,7 @@ termCompare :: SymTerm -> SymTerm -> Ordering
 termCompare (Number n1) (Number n2) = n1 `compare` n2
 termCompare (Variable v1) (Variable v2) = v1 `compare` v2
 termCompare (Number n1) (Variable v1) = LT
+termCompare (Variable _) t = LT
 termCompare _ _ = GT
 
 -- Converts a product tree into a list (representing the flat structure of multiplications): (x*y) * ((a*b) * z) = x*y*a*b*z
@@ -143,7 +146,6 @@ prodToList p@(Power b (Number n)) | isIntegral n = replicate (round n) b
 prodToList t = [t]
 
 listToProd :: [SymTerm] -> SymTerm
-listToProd [] = Number 1
 listToProd [t] = t
 listToProd (t:ts) = Product t $ listToProd ts
 
