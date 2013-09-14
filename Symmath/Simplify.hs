@@ -1,12 +1,17 @@
 module Symmath.Simplify where
 
+import Data.List
+
 import Symmath.Util
 import Symmath.Terms
 
 -- simplify terms with simplifyOnce until the simplified version is the same as the one from the last simplification step
 simplify :: SymTerm -> SymTerm
-simplify t = if t == simplifiedT then t else simplify (simplifyOnce t)
-    where simplifiedT = simplifyOnce t
+simplify t = let simplifiedT = simplifiedT_f in
+                if t == simplifiedT
+                then t
+                else simplify (simplifyOnce t)
+    where simplifiedT_f = simplifyOnce t
 
 -- simplify terms (one simplification step)
 
@@ -41,7 +46,9 @@ simplifySum (Sum (Number n1) (Sum (Number n2) t1)) = Sum (Number (n1 + n2)) t1
 simplifySum (Sum t1 (Product t2 t3)) | t1 == t3 = Product (Sum t2 (Number 1)) t1
                                      | t1 == t2 = Product (Sum t3 (Number 1)) t1
 simplifySum (Sum t1 t2) | t1 == t2 = Product (Number 2) t1
-                        | otherwise = Sum (simplifyOnce t1) (simplifyOnce t2)
+                        | otherwise = case prodListIntersectTuple (prodToList t1) (prodToList t2) of -- doubled simplifyOnce because un-resolved terms are multiplied with (Number 1)
+                                        ([],rest1,rest2) -> Sum (simplifyOnce . simplifyOnce . listToProd $ rest1) (simplifyOnce . simplifyOnce . listToProd $ rest2)
+                                        (common,rest1,rest2) -> Product (listToProd common) (Sum (listToProd rest1) (Product (Number 1) (listToProd rest2)))
 
 -- Products
 simplifyProd :: SymTerm -> SymTerm
@@ -57,11 +64,13 @@ simplifyProd (Product term (Number 1)) = term
 -- a * b = c (c = a*b)
 simplifyProd (Product (Number n1) (Number n2)) = Number $ n1 * n2
 -- Equal-base powers: x^a * x^b = x^(a+b)
-simplifyProd (Product (Power b1 e1) (Power b2 e2)) | b1 == b2 = Power (b1) (simplifyOnce $ Sum e1 e2)
-                                                   | otherwise = (Product (Power (simplifyOnce b1) (simplifyOnce e1)) (Power (simplifyOnce b2) (simplifyOnce e2)))
--- Simplifies e.g. x^3 * (x^5 * y)
-simplifyProd (Product t1 (Product t2 t3)) = Product (simplifyOnce $ Product t1 t2) t3
-simplifyProd (Product t1 t2) = Product (simplifyOnce t1) (simplifyOnce t2)
+simplifyProd (Product (Power b1 e1) (Power b2 e2)) | b1 == b2 = Power b1 (Sum e1 e2)
+                                                   | otherwise = (Product (Power b1 e1) (Power b2 e2))
+-- x * x = x^1
+-- Transforms x^3 * (x^5 * y) to the left-associating (x^3 * x^5) * y
+simplifyProd (Product t1 (Product t2 t3)) = Product (Product t1 t2) t3
+simplifyProd (Product t1 t2) | t1 == t2 = (Power t1 (Number 2))
+                             | otherwise = Product (simplifyOnce t1) (simplifyOnce t2)
 {-
     - Old rules, not used anymore. Do not re-implement!
 
@@ -95,7 +104,7 @@ simplifyPow (Power (Exp e1) e2) = (Exp (Product e1 e2))
 -- x^0 = 1
 simplifyPow (Power b (Number 0)) = Number 1
 -- x^1 = x
-simplifyPow (Power b (Number 1)) = simplifyOnce b
+simplifyPow (Power b (Number 1)) = b
 simplifyPow (Power (Constant Euler) t) = Exp t
 simplifyPow (Power t1 t2) = Power (simplifyOnce t1) (simplifyOnce t2)
 
@@ -114,3 +123,36 @@ simplifyExp (Exp (Number 0)) = Number 1
 -- euler^1 = euler
 simplifyExp (Exp (Number 1)) = Constant Euler
 simplifyExp (Exp t) = Exp $ simplifyOnce t
+
+--------------------------------------------------------------
+
+sortProduct :: SymTerm -> SymTerm
+sortProduct = listToProd . sortBy termCompare . prodToList
+
+termCompare :: SymTerm -> SymTerm -> Ordering
+termCompare (Number n1) (Number n2) = n1 `compare` n2
+termCompare (Variable v1) (Variable v2) = v1 `compare` v2
+termCompare (Number n1) (Variable v1) = LT
+termCompare _ _ = GT
+
+-- Converts a product tree into a list (representing the flat structure of multiplications): (x*y) * ((a*b) * z) = x*y*a*b*z
+prodToList :: SymTerm -> [SymTerm]
+prodToList (Product t1 t2) = prodToList t1 ++ prodToList t2
+prodToList p@(Power b (Number n)) | isIntegral n = replicate (round n) b
+                                  | otherwise = [p]
+prodToList t = [t]
+
+listToProd :: [SymTerm] -> SymTerm
+listToProd [] = Number 1
+listToProd [t] = t
+listToProd (t:ts) = Product t $ listToProd ts
+
+prodListIntersectTuple :: Eq a => [a] -> [a] -> ([a],[a],[a])
+prodListIntersectTuple a b = let is = prodListIntersect a b in
+                             (is, a \\ is, b \\ is)
+
+prodListIntersect :: Eq a => [a] -> [a] -> [a]
+prodListIntersect (x:xs) (y:ys) = if x == y
+                                  then x:(prodListIntersect xs $ delete y ys)
+                                  else prodListIntersect xs ys
+prodListIntersect _ _ = []
