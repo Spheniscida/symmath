@@ -36,15 +36,13 @@ simplifySum :: SymTerm -> SymTerm
 simplifySum (Sum (Number n1) (Number n2)) = Number $ n1 + n2
 
 -- (n1 + x) + n2
-simplifySum (Sum (Sum t1 (Number n1)) (Number n2)) = Sum (t1) (Number (n1 + n2))
+simplifySum (Sum (Sum t1 (Number n1)) (Number n2)) = Sum t1 (Number (n1 + n2))
 -- (x + n1) + n2
-simplifySum (Sum (Sum (Number n1) t1) (Number n2)) = Sum (t1) (Number (n1 + n2))
+simplifySum (Sum (Sum (Number n1) t1) (Number n2)) = Sum t1 (Number (n1 + n2))
 -- n1 + (x + n2)
-simplifySum (Sum (Number n1) (Sum t1 (Number n2))) = Sum (t1) (Number (n1 + n2))
+simplifySum (Sum (Number n1) (Sum t1 (Number n2))) = Sum t1 (Number (n1 + n2))
 -- n1 + (n2 + x)
-simplifySum (Sum (Number n1) (Sum (Number n2) t1)) = Sum (Number (n1 + n2)) t1
-simplifySum (Sum t1 (Product t2 t3)) | t1 == t3 = Product (Sum t2 (Number 1)) t1
-                                     | t1 == t2 = Product (Sum t3 (Number 1)) t1
+simplifySum (Sum (Number n1) (Sum (Number n2) t1)) = Sum t1 (Number (n1 + n2))
 simplifySum (Sum t1 t2) | t1 == t2 = Product (Number 2) t1
                         | otherwise = case prodListIntersectTuple (prodToList t1) (prodToList t2) of -- doubled simplifyOnce because un-resolved terms are multiplied with (Number 1)
                                         ([],rest1,rest2) -> Sum (simplifyOnce . simplifyOnce . listToProd $ rest1) (simplifyOnce . simplifyOnce . listToProd $ rest2)
