@@ -3,6 +3,7 @@ module Symmath.Eval where
 import Symmath.Terms
 import Symmath.Constants
 import Symmath.Assoc
+import Symmath.Util
 
 import Data.Maybe
 import Control.Monad.Reader
@@ -82,8 +83,6 @@ rEvalBinary op t1 t2 = do
 -- Utilities
 
 -- Is only used when it's guaranteed that the argument is not Nothing
-fromMb :: Maybe a -> a
-fromMb (Just a) = a
 
 getTrigFun :: Trigo -> (Double -> Double)
 getTrigFun t = case t of
