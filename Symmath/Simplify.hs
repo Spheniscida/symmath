@@ -56,6 +56,10 @@ simplifyProd (Product (Number 0) _term) = Number 0
 simplifyProd (Product _term (Number 0)) = Number 0
 -- a * b => c (c == a * b)
 simplifyProd (Product (Number n1) (Number n2)) = Number $ n1 * n2
+-- Simplify negative powers - this doesn't work with the current algos in cleanProduct
+simplifyProd (Product (Power b e@(Number n)) t) | b == t && n < 0 = Power b (Sum e (Number 1))
+simplifyProd (Product t (Power b e@(Number n))) | b == t && n < 0 = Power b (Sum e (Number 1))
+simplifyProd (Product (Power b1 e1@(Number n1)) (Power b2 e2@(Number n2))) | b1 == b2 && (n1 < 0 || n2 < 0) = Power b1 (Sum e1 e2)
 simplifyProd (Product t1 t2) = cleanProduct $ Product (simplifyOnce t1) (simplifyOnce t2)
 
 -- Differences
@@ -111,14 +115,18 @@ termCompare :: SymTerm -> SymTerm -> Ordering
 termCompare (Number n1) (Number n2) = n1 `compare` n2
 termCompare (Variable v1) (Variable v2) = v1 `compare` v2
 termCompare (Number n1) (Variable v1) = LT
-termCompare (Variable _) t = LT
 termCompare (Power b1 _) (Power b2 _) = b1 `termCompare` b2
+termCompare (Power b1 _) t | b1 == t = GT
+                           | otherwise = b1 `termCompare` t
+termCompare t (Power b2 _) | b2 == t = LT
+                           | otherwise = t `termCompare` b2
+termCompare (Variable _) t = LT
 termCompare _ _ = GT
 
 -- Converts a product tree into a list (representing the flat structure of multiplications): (x*y) * ((a*b) * z) = x*y*a*b*z
 prodToList :: SymTerm -> [SymTerm]
 prodToList (Product t1 t2) = prodToList t1 ++ prodToList t2
-prodToList p@(Power b (Number n)) | isIntegral n = replicate (round n) b
+prodToList p@(Power b (Number n)) | isIntegral n && n > 0 = replicate (round n) b
                                   | otherwise = [p]
 prodToList (Number 1) = []
 prodToList t = [t]
@@ -142,12 +150,31 @@ prodListIntersect _ _ = []
 -- Converts a product of many terms into a product with the same terms transformed to powers
 
 prodListToPowers :: [SymTerm] -> [SymTerm]
-prodListToPowers = map sameProdToPower . group . sortBy termCompare
+prodListToPowers = map sameFacToPower . groupBy prodGroupable . sortBy termCompare
 
-sameProdToPower :: [SymTerm] -> SymTerm
-sameProdToPower [t] = t
-sameProdToPower a@(x:xs) | all (==x) xs = Power x (Number . fromIntegral . length $ a)
-                         | otherwise = listToProd a
+prodGroupable :: SymTerm -> SymTerm -> Bool
+prodGroupable (Power b1 _) (Power b2 _) = b1 == b2
+prodGroupable t (Power b _) = t == b
+prodGroupable (Power b _) t = t == b
+prodGroupable a b = a == b
+
+sameFacToPower :: [SymTerm] -> SymTerm
+sameFacToPower [t] = t
+sameFacToPower a@(x:xs) | all (==x) xs = Power x (Number . fromIntegral . length $ a)
+                        | all (sameBase x) xs = foldr1 sumExponent a
+                        | otherwise = listToProd a
+
+sameBase :: SymTerm -> SymTerm -> Bool
+sameBase (Power b1 _) (Power b2 _) = b1 == b2
+sameBase a (Power b _) = a == b
+sameBase (Power b _) a = a == b
+sameBase a b = a == b
+
+sumExponent :: SymTerm -> SymTerm -> SymTerm
+sumExponent (Power b1 e1) (Power b2 e2) | b1 == b2 = Power b1 (Sum e1 e2)
+sumExponent t (Power b e) | t == b = Power b (Sum (Number 1) e)
+sumExponent (Power b e) t | t == b = Power b (Sum (Number 1) e)
+sumExponent t1 t2 = Product t1 t2
 
 -- Tidy up products
 cleanProduct :: SymTerm -> SymTerm
