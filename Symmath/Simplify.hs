@@ -65,19 +65,12 @@ simplifyProd (Product (Power b1 e1) (Power b2 e2)) | b1 == b2 = Power b1 (Sum e1
                                                    | otherwise = (Product (Power b1 e1) (Power b2 e2))
 simplifyProd (Product (Power b e) t) | b == t = Power b (Sum e (Number 1))
 simplifyProd (Product t (Power b e)) | b == t = Power b (Sum e (Number 1))
--- Transforms x^3 * (x^5 * y) to the left-associating (x^3 * x^5) * y. But only if the second term can't be simplified anymore.
-simplifyProd (Product t1 p@(Product t2 t3)) | p == simplifyOnce p = Product (Product t1 t2) t3
--- x * x = x^2
-simplifyProd (Product t1 t2) | t1 == t2 = (Power t1 (Number 2))
-                             | otherwise = Product (simplifyOnce t1) (simplifyOnce t2)
-{-
-    - Old rules, not used anymore. Do not re-implement!
-
--- a * (b+c) = a*b + a*c
-simplifyProd (Product t1 (Sum t2 t3)) = Sum (Product t1 t2) (Product t1 t3)
--- (a+b) * c = a*c + b*c
-simplifyProd (Product (Sum t2 t3) t1) = Sum (Product t1 t2) (Product t1 t3)
--}
+-- Reduces arbitrary products of at least 3 factors.
+simplifyProd p@(Product (Product t2 t3) t1) = prodToPowers p
+simplifyProd p@(Product t1 (Product t2 t3)) = prodToPowers p
+-- x * x == x^2
+simplifyProd (Product t1 t2) | t1 == t2 = Power t1 (Number 2)
+simplifyProd (Product t1 t2) = Product (simplifyOnce t1) (simplifyOnce t2)
 
 -- Differences
 simplifyDiff :: SymTerm -> SymTerm
@@ -157,3 +150,14 @@ prodListIntersect (x:xs) ys = if x `elem` ys
                                   then x:(prodListIntersect xs $ delete x ys)
                                   else prodListIntersect xs ys
 prodListIntersect _ _ = []
+
+-- Converts a product of many terms into a product with the same terms transformed to powers
+
+prodToPowers :: SymTerm -> SymTerm
+prodToPowers p@(Product t1 t2) = listToProd . map sameProdToPower . group . sortBy termCompare . prodToList $ p
+prodToPowers t = t
+
+sameProdToPower :: [SymTerm] -> SymTerm
+sameProdToPower [t] = t
+sameProdToPower a@(x:xs) | all (==x) xs = Power x (Number . fromIntegral . length $ a)
+                         | otherwise = listToProd a
