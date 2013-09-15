@@ -54,23 +54,9 @@ simplifyProd :: SymTerm -> SymTerm
 simplifyProd (Product (Number 0) _term) = Number 0
 -- x * 0 = 0
 simplifyProd (Product _term (Number 0)) = Number 0
--- 1 * x = x
-simplifyProd (Product (Number 1) term) = term
--- x * 1 = x
-simplifyProd (Product term (Number 1)) = term
--- a * b = c (c = a*b)
+-- a * b => c (c == a * b)
 simplifyProd (Product (Number n1) (Number n2)) = Number $ n1 * n2
--- Equal-base powers: x^a * x^b = x^(a+b)
-simplifyProd (Product (Power b1 e1) (Power b2 e2)) | b1 == b2 = Power b1 (Sum e1 e2)
-                                                   | otherwise = (Product (Power b1 e1) (Power b2 e2))
-simplifyProd (Product (Power b e) t) | b == t = Power b (Sum e (Number 1))
-simplifyProd (Product t (Power b e)) | b == t = Power b (Sum e (Number 1))
--- Reduces arbitrary products of at least 3 factors.
-simplifyProd p@(Product (Product t2 t3) t1) = prodToPowers p
-simplifyProd p@(Product t1 (Product t2 t3)) = prodToPowers p
--- x * x == x^2
-simplifyProd (Product t1 t2) | t1 == t2 = Power t1 (Number 2)
-simplifyProd (Product t1 t2) = Product (simplifyOnce t1) (simplifyOnce t2)
+simplifyProd (Product t1 t2) = cleanProduct $ Product (simplifyOnce t1) (simplifyOnce t2)
 
 -- Differences
 simplifyDiff :: SymTerm -> SymTerm
@@ -126,6 +112,7 @@ termCompare (Number n1) (Number n2) = n1 `compare` n2
 termCompare (Variable v1) (Variable v2) = v1 `compare` v2
 termCompare (Number n1) (Variable v1) = LT
 termCompare (Variable _) t = LT
+termCompare (Power b1 _) (Power b2 _) = b1 `termCompare` b2
 termCompare _ _ = GT
 
 -- Converts a product tree into a list (representing the flat structure of multiplications): (x*y) * ((a*b) * z) = x*y*a*b*z
@@ -145,19 +132,23 @@ prodListIntersectTuple :: Eq a => [a] -> [a] -> ([a],[a],[a])
 prodListIntersectTuple a b = let is = prodListIntersect a b in
                              (is, a \\ is, b \\ is)
 
+-- Data.List.intersect doesn't do what we need here
 prodListIntersect :: Eq a => [a] -> [a] -> [a]
 prodListIntersect (x:xs) ys = if x `elem` ys
-                                  then x:(prodListIntersect xs $ delete x ys)
-                                  else prodListIntersect xs ys
+                              then x:(prodListIntersect xs $ delete x ys)
+                              else prodListIntersect xs ys
 prodListIntersect _ _ = []
 
 -- Converts a product of many terms into a product with the same terms transformed to powers
 
-prodToPowers :: SymTerm -> SymTerm
-prodToPowers p@(Product t1 t2) = listToProd . map sameProdToPower . group . sortBy termCompare . prodToList $ p
-prodToPowers t = t
+prodListToPowers :: [SymTerm] -> [SymTerm]
+prodListToPowers = map sameProdToPower . group . sortBy termCompare
 
 sameProdToPower :: [SymTerm] -> SymTerm
 sameProdToPower [t] = t
 sameProdToPower a@(x:xs) | all (==x) xs = Power x (Number . fromIntegral . length $ a)
                          | otherwise = listToProd a
+
+-- Tidy up products
+cleanProduct :: SymTerm -> SymTerm
+cleanProduct p@(Product _ _) = listToProd . prodListToPowers {-. sortBy termCompare // sorted in prodListToPowers-} . prodToList $ p
