@@ -47,7 +47,7 @@ funName = Exp       <$ string "exp"
       <|> Trigo Tan <$ string "tan"
 
 mathConst :: SymParser
-mathConst = Constant Euler <$ char 'e'
+mathConst = Constant Euler <$ string "eu"
         <|> Constant Phi   <$ string "phi"
         <|> Constant Pi    <$ string "pi"
 
