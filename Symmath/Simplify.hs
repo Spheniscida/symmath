@@ -74,6 +74,7 @@ simplifyFrac (Fraction e d) = Product (Power e (Number 1)) (Power d (Number (-1)
 
 -- Powers
 simplifyPow :: SymTerm -> SymTerm
+simplifyPow (Power (Number n1) (Number n2)) = Number $ n1**n2
 -- (a^b)^c = a^(b*c)
 simplifyPow (Power (Power b1 e1) e2) = (Power b1 (Product e1 e2)) -- Abs!?
 -- (euler^a)^b = euler^(a*b)
@@ -86,6 +87,9 @@ simplifyPow (Power (Constant Euler) t) = Exp t
 simplifyPow (Power t1 t2) = Power (simplifyOnce t1) (simplifyOnce t2)
 
 simplifyAbs :: SymTerm -> SymTerm
+simplifyAbs (Abs (Number n)) = Number $ abs n
+simplifyAbs (Abs (Product (Number n) t)) = Product (Number $ abs n) (Abs t)
+--simplifyAbs (Abs (Product t (Number n))) = Product (Number $ abs n) (Abs t)
 -- abs(a * b) = abs(a) * abs(b)
 simplifyAbs (Abs (Product t1 t2)) = Product (Abs t1) (Abs t2)
 -- abs(a / b) = abs(a) / abs(b)
@@ -117,6 +121,8 @@ prodTermCompare (Power b1 _) t | b1 == t = GT
 prodTermCompare t (Power b2 _) | b2 == t = LT
                            | otherwise = t `prodTermCompare` b2
 prodTermCompare (Variable _) t = LT
+prodTermCompare (Abs t1) t2 = t1 `prodTermCompare` t2
+prodTermCompare t1 (Abs t2) = t1 `prodTermCompare` t2
 prodTermCompare _ _ = EQ
 
 -- Converts a product tree into a list (representing the flat structure of multiplications): (x*y) * ((a*b) * z) = x*y*a*b*z
