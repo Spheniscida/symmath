@@ -209,7 +209,7 @@ sumGroupable (Number _) (Number _) = True
 sumGroupable (Variable a) (Variable b) = a == b
 sumGroupable (Variable a) (Product (Number n) (Variable b)) | a == b = True
 sumGroupable (Product (Number n) (Variable b)) (Variable a) | a == b = True
-sumGroupable (Product _ _) (Product _ _) = True
+sumGroupable (Product t1 t2) (Product t3 t4) = t1 == t3 || t1 == t4 || t2 == t3 || t2 == t4
 sumGroupable _ _ = False
 
 --            New term   Accumulator
