@@ -83,7 +83,10 @@ simplifyPow (Power (Exp e1) e2) = (Exp (Product e1 e2))
 simplifyPow (Power b (Number 0)) = Number 1
 -- x^1 = x
 simplifyPow (Power b (Number 1)) = b
+-- e^x = exp(x)
 simplifyPow (Power (Constant Euler) t) = Exp t
+-- (a * b)^c = a^c * b^c
+simplifyPow (Power p@(Product t1 t2) e) = listToProd . map (flip Power $ e) . prodToList $ p
 simplifyPow (Power t1 t2) = Power (simplifyOnce t1) (simplifyOnce t2)
 
 simplifyAbs :: SymTerm -> SymTerm
