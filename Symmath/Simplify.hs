@@ -7,11 +7,10 @@ import Symmath.Terms
 
 -- simplify terms with simplifyOnce until the simplified version is the same as the one from the last simplification step
 simplify :: SymTerm -> SymTerm
-simplify t = let simplifiedT = simplifiedT_f in
-                if t == simplifiedT
-                then t
-                else simplify (simplifyOnce t)
-    where simplifiedT_f = simplifyOnce t
+simplify t = if t == simplifyNext
+             then t
+             else simplify (simplifyNext)
+    where simplifyNext = simplifyOnce t
 
 -- simplify terms (one simplification step)
 
@@ -92,7 +91,6 @@ simplifyPow (Power t1 t2) = Power (simplifyOnce t1) (simplifyOnce t2)
 simplifyAbs :: SymTerm -> SymTerm
 simplifyAbs (Abs (Number n)) = Number $ abs n
 simplifyAbs (Abs (Product (Number n) t)) = Product (Number $ abs n) (Abs t)
---simplifyAbs (Abs (Product t (Number n))) = Product (Number $ abs n) (Abs t)
 -- abs(a * b) = abs(a) * abs(b)
 simplifyAbs (Abs (Product t1 t2)) = Product (Abs t1) (Abs t2)
 -- abs(a / b) = abs(a) / abs(b)
@@ -139,6 +137,7 @@ prodToList t = [t]
 listToProd :: [SymTerm] -> SymTerm
 listToProd [] = Number 1
 listToProd [t] = t
+listToProd ((Number 1):ts) = listToProd ts
 listToProd (t:ts) = Product t (listToProd ts)
 
 prodListIntersectTuple :: [SymTerm] -> [SymTerm] -> ([SymTerm],[SymTerm],[SymTerm])
@@ -192,6 +191,7 @@ sumToList t = [t]
 listToSum :: [SymTerm] -> SymTerm
 listToSum [] = Number 0
 listToSum [t] = t
+listToSum ((Number 0):ts) = listToSum ts
 listToSum (t:ts) = Sum t (listToSum ts)
 
 sumTermCompare :: SymTerm -> SymTerm -> Ordering
@@ -225,7 +225,7 @@ consolidSum t1 t2 = Sum t1 t2
 
 -- Tidy up products
 cleanProduct :: SymTerm -> SymTerm
-cleanProduct p@(Product _ _) = listToProd . prodListToPowers {-. sortBy prodTermCompare // sorted in prodListToPowers-} . prodToList $ p
+cleanProduct p@(Product _ _) = listToProd . prodListToPowers . prodToList $ p
 
 cleanSum :: SymTerm -> SymTerm
 cleanSum s@(Sum _ _) = listToSum . map (foldr1 consolidSum) . groupBy sumGroupable . sortBy sumTermCompare . sumToList $ s
