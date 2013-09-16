@@ -28,8 +28,8 @@ term = spaces *> mathTerm <* spaces
 
 mathTerm :: SymParser
 mathTerm = parens
-   <|> mathFun
-   <|> mathConst
+   <|> try mathFun
+   <|> try mathConst
    <|> var
    <|> num
 
