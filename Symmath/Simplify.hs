@@ -37,7 +37,7 @@ simplifySum (Sum (Number n1) (Number n2)) = Number $ n1 + n2
 simplifySum (Sum t1 (Product (Number (-1)) t2)) | t1 == t2 = Number 0
 simplifySum (Sum t1@(Product _ _) t2@(Product _ _)) = case prodListIntersectTuple (prodToList t1) (prodToList t2) of
                                                         ([],rest1,rest2) -> Sum (listToProd $ rest1) (listToProd $ rest2)
-                                                        (common,rest1,rest2) -> Product (listToProd common) (Sum (Product (Number 1) (listToProd rest1)) (Product (Number 1) (listToProd rest2)))
+                                                        (common,rest1,rest2) -> Product (listToProd common) (Sum (listToProd rest1) (listToProd rest2))
 simplifySum (Sum t1 t2) = cleanSum $ Sum (simplifyOnce t1) (simplifyOnce t2)
 
 
