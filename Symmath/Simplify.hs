@@ -84,8 +84,6 @@ simplifyPow (Power b (Number 0)) = Number 1
 simplifyPow (Power b (Number 1)) = b
 -- e^x = exp(x)
 simplifyPow (Power (Constant Euler) t) = Exp t
--- (a * b)^c = a^c * b^c
-simplifyPow (Power p@(Product t1 t2) e) = listToProd . map (flip Power $ e) . prodToList $ p
 simplifyPow (Power t1 t2) = Power (simplifyOnce t1) (simplifyOnce t2)
 
 simplifyAbs :: SymTerm -> SymTerm
@@ -185,6 +183,22 @@ sumExponent t (Power b e) | t == b = Power b (Sum (Number 1) e)
 sumExponent (Power b e) t | t == b = Power b (Sum (Number 1) e)
 sumExponent t1 t2 = Product t1 t2
 
+prodListToCommonExps :: [SymTerm] -> [SymTerm]
+prodListToCommonExps = map sameExpToProd . groupBy prodExpGroupable . sortProductList
+
+prodExpGroupable :: SymTerm -> SymTerm -> Bool
+prodExpGroupable (Power b1 p1@(Product _ _)) (Power b2 p2@(Product _ _)) = 0 < (length $ prodListIntersect (prodToList p1) (prodToList p2))
+prodExpGroupable (Power b1 e1) (Power b2 p@(Product _ _)) = e1 `elem` prodToList p
+prodExpGroupable (Power b1 p@(Product _ _)) (Power b2 e2) = e2 `elem` prodToList p
+prodExpGroupable (Power b1 e1) (Power b2 e2) = e1 == e2
+prodExpGroupable _ _ = False
+
+sameExpToProd :: [SymTerm] -> SymTerm
+sameExpToProd [t] = t
+sameExpToProd ts@((Power b e):xs) = Power (inParens) (listToProd comfac)
+    where comfac = foldr (\(Power b e) a -> prodListIntersect a (prodToList e)) (prodToList e) xs
+          inParens = listToProd $ map (\(Power b e) -> Power b (listToProd ((prodToList e) \\ comfac))) ts
+
 -- Same for sums (not as good yet!)
 
 sumToList :: SymTerm -> [SymTerm]
@@ -229,7 +243,7 @@ consolidSum t1 t2 = Sum t1 t2
 
 -- Tidy up products
 cleanProduct :: SymTerm -> SymTerm
-cleanProduct p@(Product _ _) = listToProd . prodListToPowers . prodToList $ p
+cleanProduct p@(Product _ _) = listToProd . prodListToCommonExps . prodListToPowers . prodToList $ p
 
 cleanSum :: SymTerm -> SymTerm
 cleanSum s@(Sum _ _) = listToSum . map (foldr1 consolidSum) . groupBy sumGroupable . sortBy sumTermCompare . sumToList $ s
