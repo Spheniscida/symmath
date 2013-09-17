@@ -104,12 +104,11 @@ simplifyExp :: SymTerm -> SymTerm
 simplifyExp (Exp (Number 0)) = Number 1
 -- euler^1 = euler
 simplifyExp (Exp (Number 1)) = Constant Euler
+-- euler^(ln(x) * y) = x^y. Only this clause; products are sorted so ln's go to the front
+simplifyExp (Exp (Product (Ln t1) t2)) = Power t1 t2
 simplifyExp (Exp t) = Exp $ simplifyOnce t
 
 --------------------------------------------------------------
-
-sortProductList :: [SymTerm] -> [SymTerm]
-sortProductList = sortBy prodTermCompare
 
 prodTermCompare :: SymTerm -> SymTerm -> Ordering
 prodTermCompare (Number n1) (Number n2) = n1 `compare` n2
@@ -117,6 +116,8 @@ prodTermCompare (Variable v1) (Variable v2) = v1 `compare` v2
 prodTermCompare (Number n1) (Variable v1) = LT
 prodTermCompare (Variable v1) (Number n1) = GT
 prodTermCompare (Power b1 _) (Power b2 _) = b1 `prodTermCompare` b2
+prodTermCompare (Ln _) _ = LT
+prodTermCompare _ (Ln _) = GT
 prodTermCompare (Power b1 _) t | b1 == t = GT
                            | otherwise = b1 `prodTermCompare` t
 prodTermCompare t (Power b2 _) | b2 == t = LT
@@ -153,6 +154,9 @@ prodListIntersect (x:xs) ys = if x `elem` ys
 prodListIntersect _ _ = []
 
 -- Converts a product of many terms into a product with the same terms transformed to powers
+
+sortProductList :: [SymTerm] -> [SymTerm]
+sortProductList = sortBy prodTermCompare
 
 prodListToPowers :: [SymTerm] -> [SymTerm]
 prodListToPowers = map sameFacToPower . groupBy prodGroupable . sortProductList

@@ -27,6 +27,10 @@ tests = TestList [
         , testProduct12
         , testProduct13
 
+        , testPower1
+
+        , testExp1
+
         , testNumberDiff1
 
         , testNumberFrac1
@@ -53,6 +57,10 @@ testProduct10 = TestCase $ assertEqual "(1+2) * (2+3) == 15" (Number 15) (simpli
 testProduct11 = TestCase $ assertEqual "(y * x) * y == x * y^2" (x * (Power y (Number 2))) (simplify $ x * y * y)
 testProduct12 = TestCase $ assertEqual "(y * x) * y * (z * y * x * y) == x^2 * y^4 * z" ((Power x (Number 2)) * ((Power y (Number 4)) * z)) (simplify $ y * x * y * z * y * x * y)
 testProduct13 = TestCase $ assertEqual "y * x * y^(-1) == x" x (simplify $ x * (Power y (Number (-1))) * y)
+
+testPower1 = TestCase $ assertEqual "(x^y)^z = x^(y*z)" (Power x (y * z)) (simplify (Power (Power x y) z))
+
+testExp1 = TestCase $ assertEqual "eu^(ln(x) * y) == x^y" (Power x y) (simplify (Exp (Product (Ln x) y)))
 
 testNumberDiff1 = TestCase $ assertEqual "3 - 4 == -1" (Number (-1)) (simplify (Difference (Number 3) (Number 4)))
 
