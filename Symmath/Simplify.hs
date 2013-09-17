@@ -121,6 +121,7 @@ cleanSum s@(Sum _ _) = listToSum . map (foldr1 consolidSum) . groupBy sumGroupab
 prodToList :: SymTerm -> [SymTerm]
 prodToList (Product t1 t2) = prodToList t1 ++ prodToList t2
 prodToList p@(Power b (Number n)) | isIntegral n && n > 0 = replicate (round n) b
+                                  | isIntegral n && n < 0 = map (flip Power (Number n)) . prodToList $ b
                                   | otherwise = [p]
 prodToList (Number 1) = []
 prodToList t = [t]
