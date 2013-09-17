@@ -11,3 +11,23 @@ data types to represent terms and equations. We're putting some functions around
 derivate or simplify them.
 
 If you would like to participate, it's not hard! Write your own function, add some clauses to the functions... Fork us :)
+
+## Standards and comparison
+
+We use *Texas Instruments'* *TI-nspire CAS* calculator as a reference/example for a professional and working CAS. But we try to
+get better; for example Symmath.Simplify transforms `x^y * z^y` to `(x*z)^y` while the TI-nspire does not.
+
+## Modularization
+
+Modularization is very important to us; we develop every module in a separate branch (Symmath.Simplify -> pu/simplify,
+Symmath.Parse -> pu/parse...). Now and then we merge all important branches into next to have a working release with
+all the cutting-edge features in it.
+
+## Testing
+
+As symmath is fairly complex (like, it's not the Linux kernel but there *is* the possibility of introducing bugs and if they're
+in our codebase they are hard to discover and to fix). We use HUnit to test our algorithms on correctness and try to check them
+before checking in new code.
+
+If you're developing a feature in a module with existing tests (it's only `Simplify` yet), write one or two tests to cover your new
+code. Just to avoid fixing regressions dozens of commits later.
