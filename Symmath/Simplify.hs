@@ -106,24 +106,16 @@ simplifyExp (Exp (Number 1)) = Constant Euler
 simplifyExp (Exp (Product (Ln t1) t2)) = Power t1 t2
 simplifyExp (Exp t) = Exp $ simplifyOnce t
 
---------------------------------------------------------------
+---------------------------------------------------------------------
+-- List-based simplification algorithms for sums and products. ------
+---------------------------------------------------------------------
+-- Tidy up products
+cleanProduct :: SymTerm -> SymTerm
+cleanProduct p@(Product _ _) = listToProd . prodListToCommonExps . prodListToPowers . prodToList $ p
 
-prodTermCompare :: SymTerm -> SymTerm -> Ordering
-prodTermCompare (Number n1) (Number n2) = n1 `compare` n2
-prodTermCompare (Variable v1) (Variable v2) = v1 `compare` v2
-prodTermCompare (Number n1) (Variable v1) = LT
-prodTermCompare (Variable v1) (Number n1) = GT
-prodTermCompare (Power b1 _) (Power b2 _) = b1 `prodTermCompare` b2
-prodTermCompare (Ln _) _ = LT
-prodTermCompare _ (Ln _) = GT
-prodTermCompare (Power b1 _) t | b1 == t = GT
-                           | otherwise = b1 `prodTermCompare` t
-prodTermCompare t (Power b2 _) | b2 == t = LT
-                           | otherwise = t `prodTermCompare` b2
-prodTermCompare (Variable _) t = LT
-prodTermCompare (Abs t1) t2 = t1 `prodTermCompare` t2
-prodTermCompare t1 (Abs t2) = t1 `prodTermCompare` t2
-prodTermCompare _ _ = EQ
+cleanSum :: SymTerm -> SymTerm
+cleanSum s@(Sum _ _) = listToSum . map (foldr1 consolidSum) . groupBy sumGroupable . sortSumList . sumToList $ s
+
 
 -- Converts a product tree into a list (representing the flat structure of multiplications): (x*y) * ((a*b) * z) = x*y*a*b*z
 prodToList :: SymTerm -> [SymTerm]
@@ -139,6 +131,19 @@ listToProd [t] = t
 listToProd ((Number 1):ts) = listToProd ts
 listToProd (t:ts) = Product t (listToProd ts)
 
+sumToList :: SymTerm -> [SymTerm]
+sumToList (Sum t1 t2) = sumToList t1 ++ sumToList t2
+sumToList (Number 0) = []
+sumToList t = [t]
+
+listToSum :: [SymTerm] -> SymTerm
+listToSum [] = Number 0
+listToSum [t] = t
+listToSum ((Number 0):ts) = listToSum ts
+listToSum (t:ts) = Sum t (listToSum ts)
+
+--
+
 prodListIntersectTuple :: [SymTerm] -> [SymTerm] -> ([SymTerm],[SymTerm],[SymTerm])
 prodListIntersectTuple a b = let is = prodListIntersect a b in
                              (is, a \\ is, b \\ is)
@@ -153,17 +158,11 @@ prodListIntersect _ _ = []
 
 -- Converts a product of many terms into a product with the same terms transformed to powers
 
-sortProductList :: [SymTerm] -> [SymTerm]
-sortProductList = sortBy prodTermCompare
-
 prodListToPowers :: [SymTerm] -> [SymTerm]
 prodListToPowers = map sameFacToPower . groupBy prodGroupable . sortProductList
 
-prodGroupable :: SymTerm -> SymTerm -> Bool
-prodGroupable (Power b1 _) (Power b2 _) = b1 == b2
-prodGroupable t (Power b _) = t == b
-prodGroupable (Power b _) t = t == b
-prodGroupable a b = a == b
+prodListToCommonExps :: [SymTerm] -> [SymTerm]
+prodListToCommonExps = map sameExpToProd . groupBy prodExpGroupable
 
 sameFacToPower :: [SymTerm] -> SymTerm
 sameFacToPower [t] = t
@@ -183,15 +182,7 @@ sumExponent t (Power b e) | t == b = Power b (Sum (Number 1) e)
 sumExponent (Power b e) t | t == b = Power b (Sum (Number 1) e)
 sumExponent t1 t2 = Product t1 t2
 
-prodListToCommonExps :: [SymTerm] -> [SymTerm]
-prodListToCommonExps = map sameExpToProd . groupBy prodExpGroupable . sortProductList
-
-prodExpGroupable :: SymTerm -> SymTerm -> Bool
-prodExpGroupable (Power b1 p1@(Product _ _)) (Power b2 p2@(Product _ _)) = 0 < (length $ prodListIntersect (prodToList p1) (prodToList p2))
-prodExpGroupable (Power b1 e1) (Power b2 p@(Product _ _)) = e1 `elem` prodToList p
-prodExpGroupable (Power b1 p@(Product _ _)) (Power b2 e2) = e2 `elem` prodToList p
-prodExpGroupable (Power b1 e1) (Power b2 e2) = e1 == e2
-prodExpGroupable _ _ = False
+--
 
 sameExpToProd :: [SymTerm] -> SymTerm
 sameExpToProd [t] = t
@@ -199,18 +190,41 @@ sameExpToProd ts@((Power b e):xs) = Power (inParens) (listToProd comfac)
     where comfac = foldr (\(Power b e) a -> prodListIntersect a (prodToList e)) (prodToList e) xs
           inParens = listToProd $ map (\(Power b e) -> Power b (listToProd ((prodToList e) \\ comfac))) ts
 
--- Same for sums (not as good yet!)
+-- Same for sums
 
-sumToList :: SymTerm -> [SymTerm]
-sumToList (Sum t1 t2) = sumToList t1 ++ sumToList t2
-sumToList (Number 0) = []
-sumToList t = [t]
+--            New term   Accumulator
+consolidSum :: SymTerm -> SymTerm -> SymTerm
+consolidSum (Variable v1) (Variable v2) | v1 == v2 = Product (Number 2) (Variable v1)
+consolidSum (Variable v1) (Product (Number n) (Variable v2)) | v1 == v2 = Product (Number $ n+1) (Variable v1)
+consolidSum (Product (Number n) (Variable v2)) (Variable v1)  | v1 == v2 = Product (Number $ n+1) (Variable v1)
+consolidSum (Product (Number n1) t1) (Product (Number n2) t2) | t1 == t2 = Product (Number $ n1 + n2) t1
+consolidSum t1 t2 = Sum t1 t2
 
-listToSum :: [SymTerm] -> SymTerm
-listToSum [] = Number 0
-listToSum [t] = t
-listToSum ((Number 0):ts) = listToSum ts
-listToSum (t:ts) = Sum t (listToSum ts)
+-- Comparison/sort
+--
+sortProductList :: [SymTerm] -> [SymTerm]
+sortProductList = sortBy prodTermCompare
+
+sortSumList :: [SymTerm] -> [SymTerm]
+sortSumList = sortBy sumTermCompare
+
+prodTermCompare :: SymTerm -> SymTerm -> Ordering
+prodTermCompare (Number n1) (Number n2) = n1 `compare` n2
+prodTermCompare (Variable v1) (Variable v2) = v1 `compare` v2
+prodTermCompare (Number n1) (Variable v1) = LT
+prodTermCompare (Variable v1) (Number n1) = GT
+prodTermCompare (Power b1 _) (Power b2 _) = b1 `prodTermCompare` b2
+prodTermCompare (Ln _) _ = LT
+prodTermCompare _ (Ln _) = GT
+prodTermCompare (Power b1 _) t | b1 == t = GT
+                           | otherwise = b1 `prodTermCompare` t
+prodTermCompare t (Power b2 _) | b2 == t = LT
+                           | otherwise = t `prodTermCompare` b2
+prodTermCompare (Variable _) t = LT
+prodTermCompare (Abs t1) t2 = t1 `prodTermCompare` t2
+prodTermCompare t1 (Abs t2) = t1 `prodTermCompare` t2
+prodTermCompare _ _ = EQ
+
 
 sumTermCompare :: SymTerm -> SymTerm -> Ordering
 sumTermCompare (Number _) (Number _) = EQ
@@ -225,6 +239,22 @@ sumTermCompare t (Number _) = GT
 sumTermCompare t (Variable _) = GT
 sumTermCompare t1 t2 = EQ
 
+-- Grouping predicates
+--
+
+prodGroupable :: SymTerm -> SymTerm -> Bool
+prodGroupable (Power b1 _) (Power b2 _) = b1 == b2
+prodGroupable t (Power b _) = t == b
+prodGroupable (Power b _) t = t == b
+prodGroupable a b = a == b
+
+prodExpGroupable :: SymTerm -> SymTerm -> Bool
+prodExpGroupable (Power b1 p1@(Product _ _)) (Power b2 p2@(Product _ _)) = 0 < (length $ prodListIntersect (prodToList p1) (prodToList p2))
+prodExpGroupable (Power b1 e1) (Power b2 p@(Product _ _)) = e1 `elem` prodToList p
+prodExpGroupable (Power b1 p@(Product _ _)) (Power b2 e2) = e2 `elem` prodToList p
+prodExpGroupable (Power b1 e1) (Power b2 e2) = e1 == e2
+prodExpGroupable _ _ = False
+
 sumGroupable :: SymTerm -> SymTerm -> Bool
 sumGroupable (Number _) (Number _) = True
 sumGroupable (Variable a) (Variable b) = a == b
@@ -233,17 +263,3 @@ sumGroupable (Product (Number n) (Variable b)) (Variable a) | a == b = True
 sumGroupable (Product t1 t2) (Product t3 t4) = t1 == t3 || t1 == t4 || t2 == t3 || t2 == t4
 sumGroupable _ _ = False
 
---            New term   Accumulator
-consolidSum :: SymTerm -> SymTerm -> SymTerm
-consolidSum (Variable v1) (Variable v2) | v1 == v2 = Product (Number 2) (Variable v1)
-consolidSum (Variable v1) (Product (Number n) (Variable v2)) | v1 == v2 = Product (Number $ n+1) (Variable v1)
-consolidSum (Product (Number n) (Variable v2)) (Variable v1)  | v1 == v2 = Product (Number $ n+1) (Variable v1)
-consolidSum (Product (Number n1) t1) (Product (Number n2) t2) | t1 == t2 = Product (Number $ n1 + n2) t1
-consolidSum t1 t2 = Sum t1 t2
-
--- Tidy up products
-cleanProduct :: SymTerm -> SymTerm
-cleanProduct p@(Product _ _) = listToProd . prodListToCommonExps . prodListToPowers . prodToList $ p
-
-cleanSum :: SymTerm -> SymTerm
-cleanSum s@(Sum _ _) = listToSum . map (foldr1 consolidSum) . groupBy sumGroupable . sortBy sumTermCompare . sumToList $ s
