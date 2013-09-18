@@ -50,10 +50,6 @@ simplifyProd (Product (Number 0) _term) = Number 0
 simplifyProd (Product _term (Number 0)) = Number 0
 -- a * b => c (c == a * b)
 simplifyProd (Product (Number n1) (Number n2)) = Number $ n1 * n2
--- Simplify negative powers - this doesn't work with the current algos in cleanProduct so we'll do it here
-simplifyProd (Product (Power b e@(Number n)) t) | b == t && n < 0 = Power b (Sum e (Number 1))
-simplifyProd (Product t (Power b e@(Number n))) | b == t && n < 0 = Power b (Sum e (Number 1))
-simplifyProd (Product (Power b1 e1@(Number n1)) (Power b2 e2@(Number n2))) | b1 == b2 && (n1 < 0 || n2 < 0) = Power b1 (Sum e1 e2)
 simplifyProd (Product t1 t2) = cleanProduct $ Product (simplifyOnce t1) (simplifyOnce t2)
 
 -- Differences
