@@ -111,7 +111,7 @@ simplifyExp (Exp t) = Exp $ simplifyOnce t
 ---------------------------------------------------------------------
 -- Tidy up products
 cleanProduct :: SymTerm -> SymTerm
-cleanProduct p@(Product _ _) = listToProd . prodListToCommonExps . prodListToPowers . prodToList $ p
+cleanProduct p@(Product _ _) = listToProd . prodListToPowers . prodListToCommonExps . prodToList $ p
 
 cleanSum :: SymTerm -> SymTerm
 cleanSum s@(Sum _ _) = listToSum . map (foldr1 consolidSum) . groupBy sumGroupable . sortSumList . sumToList $ s
@@ -120,9 +120,7 @@ cleanSum s@(Sum _ _) = listToSum . map (foldr1 consolidSum) . groupBy sumGroupab
 -- Converts a product tree into a list (representing the flat structure of multiplications): (x*y) * ((a*b) * z) = x*y*a*b*z
 prodToList :: SymTerm -> [SymTerm]
 prodToList (Product t1 t2) = prodToList t1 ++ prodToList t2
-prodToList p@(Power b (Number n)) | isIntegral n && n > 0 = replicate (round n) b
-                                  | isIntegral n && n < 0 = map (flip Power (Number n)) . prodToList $ b
-                                  | otherwise = [p]
+prodToList p@(Power b (Number n)) = map (flip Power (Number n)) . prodToList $ b
 prodToList (Number 1) = []
 prodToList t = [t]
 
@@ -151,7 +149,7 @@ prodListIntersectTuple a b = let is = prodListIntersect a b in
 
 -- Data.List.intersect doesn't do what we need here
 prodListIntersect :: [SymTerm] -> [SymTerm] -> [SymTerm]
-prodListIntersect ((Number n):xs) ys = prodListIntersect xs ys
+--prodListIntersect ((Number n):xs) ys = prodListIntersect xs ys
 prodListIntersect (x:xs) ys = if x `elem` ys
                               then x:(prodListIntersect xs $ delete x ys)
                               else prodListIntersect xs ys
@@ -163,7 +161,7 @@ prodListToPowers :: [SymTerm] -> [SymTerm]
 prodListToPowers = map sameFacToPower . groupBy prodGroupable . sortProductList
 
 prodListToCommonExps :: [SymTerm] -> [SymTerm]
-prodListToCommonExps = map sameExpToProd . groupBy prodExpGroupable
+prodListToCommonExps = map sameExpToProd . groupBy prodExpGroupable . sortProductExpList
 
 sameFacToPower :: [SymTerm] -> SymTerm
 sameFacToPower [t] = t
@@ -187,9 +185,14 @@ sumExponent t1 t2 = Product t1 t2
 
 sameExpToProd :: [SymTerm] -> SymTerm
 sameExpToProd [t] = t
-sameExpToProd ts@((Power b e):xs) = Power (inParens) (listToProd comfac)
+sameExpToProd ts@((Power b e):xs) = if comfac /= []
+                                    then Power (inParens) (listToProd comfac)
+                                    else inParens
     where comfac = foldr (\(Power b e) a -> prodListIntersect a (prodToList e)) (prodToList e) xs
-          inParens = listToProd $ map (\(Power b e) -> Power b (listToProd ((prodToList e) \\ comfac))) ts
+          inParens = listToProd $ map (\(Power b e) -> let remainfac = (listToProd ((prodToList e) \\ comfac)) in
+                                                       if remainfac == Number 1
+                                                       then b
+                                                       else Power b remainfac) ts
 
 -- Same for sums
 
@@ -206,6 +209,9 @@ consolidSum t1 t2 = Sum t1 t2
 sortProductList :: [SymTerm] -> [SymTerm]
 sortProductList = sortBy prodTermCompare
 
+sortProductExpList :: [SymTerm] -> [SymTerm]
+sortProductExpList = sortBy prodExpTermCompare
+
 sortSumList :: [SymTerm] -> [SymTerm]
 sortSumList = sortBy sumTermCompare
 
@@ -218,13 +224,30 @@ prodTermCompare (Power b1 _) (Power b2 _) = b1 `prodTermCompare` b2
 prodTermCompare (Ln _) _ = LT
 prodTermCompare _ (Ln _) = GT
 prodTermCompare (Power b1 _) t | b1 == t = GT
-                           | otherwise = b1 `prodTermCompare` t
+                               | otherwise = b1 `prodTermCompare` t
 prodTermCompare t (Power b2 _) | b2 == t = LT
-                           | otherwise = t `prodTermCompare` b2
+                               | otherwise = t `prodTermCompare` b2
 prodTermCompare (Variable _) t = LT
 prodTermCompare (Abs t1) t2 = t1 `prodTermCompare` t2
 prodTermCompare t1 (Abs t2) = t1 `prodTermCompare` t2
 prodTermCompare _ _ = EQ
+
+prodExpTermCompare :: SymTerm -> SymTerm -> Ordering
+prodExpTermCompare (Number n1) (Number n2) = n1 `compare` n2
+prodExpTermCompare (Variable v1) (Variable v2) = v1 `compare` v2
+prodExpTermCompare (Number n1) (Variable v1) = LT
+prodExpTermCompare (Variable v1) (Number n1) = GT
+prodExpTermCompare (Power b1 e1) (Power b2 e2) = e1 `prodExpTermCompare` e2
+prodExpTermCompare (Ln _) _ = LT
+prodExpTermCompare _ (Ln _) = GT
+prodExpTermCompare (Power b1 _) t | b1 == t = LT
+                                  | otherwise = b1 `prodExpTermCompare` t
+prodExpTermCompare t (Power b2 _) | b2 == t = GT
+                                  | otherwise = t `prodExpTermCompare` b2
+prodExpTermCompare (Variable _) t = GT
+prodExpTermCompare (Abs t1) t2 = t1 `prodExpTermCompare` t2
+prodExpTermCompare t1 (Abs t2) = t1 `prodExpTermCompare` t2
+prodExpTermCompare _ _ = EQ
 
 
 sumTermCompare :: SymTerm -> SymTerm -> Ordering
@@ -244,6 +267,7 @@ sumTermCompare t1 t2 = EQ
 --
 
 prodGroupable :: SymTerm -> SymTerm -> Bool
+prodGroupable (Number _) (Number _) = True
 prodGroupable (Power b1 _) (Power b2 _) = b1 == b2
 prodGroupable t (Power b _) = t == b
 prodGroupable (Power b _) t = t == b
