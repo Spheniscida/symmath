@@ -5,7 +5,7 @@ import Control.Monad
 import Data.List
 import Text.Printf
 
-import Text.PrettyPrint.Boxes
+import Text.PrettyPrint
 
 import Symmath.Terms
 import Symmath.Eval
@@ -13,48 +13,43 @@ import Symmath.Util
 
 data FuncValue = Value Double | Undefined
 
-
 instance Show FuncValue where
     show (Value n) = show n
     show Undefined = "undef"
 
-calcFunc :: SymTerm -> Double -> Double -> Double -> [(Double,FuncValue)]
-calcFunc = calcFuncInd 'x'
+-- Use show on the returned Docs to format (render) them.
 
-calcFuncInd :: Char -> SymTerm -> Double -> Double -> Double -> [(Double,FuncValue)]
-calcFuncInd indep t from to interval = foldr (\x l -> (x,funcAtPt x):l) [] [from,from+interval..to]
-        where funcAtPt x = let fx = evalTermP t [(indep,x)] in
-                                if fx == Nothing
-                                then Undefined
-                                else Value . fromMb $ fx
 
-printCalcFunc :: SymTerm -> Double -> Double -> Double -> Box
-printCalcFunc = printCalcFuncInd 'x'
+------------ Functions using defaults --------------------
+-- Uses default values for field width, accuracy and the independent variable
+defaultFunctionTable :: Double -> Double -> Double -> SymTerm -> Doc
+defaultFunctionTable from to ival term = multipleFunctionsDefault from to ival [term]
 
-printCalcFuncInd :: Char -> SymTerm -> Double -> Double -> Double -> Box
-printCalcFuncInd indep t from to interval = vcat top $ columnTitle:values
-        where termString = show t
-              columnTitle = char indep <> moveRight 10 (text termString) `v0cat`  text (replicate (15 + length termString) '-')
-              values = map doubleToBox $ calcFuncInd indep t from to interval
-              doubleToBox (x,v) = text (printf "%.3f" x) <+> moveRight 5 (text . printfFuncValue $ v)
+multipleFunctionsDefault :: Double -> Double -> Double -> [SymTerm] -> Doc
+multipleFunctionsDefault from to ival terms = multipleFunctions from to ival width acc terms indep
+    where width = 15
+          acc = 4
+          indep = 'x'
 
-printCalcFuncs :: [SymTerm] -> Double -> Double -> Double -> Box
-printCalcFuncs = printCalcFuncsIndSp 'x' 5
 
-printCalcFuncsIndSp :: Char -> Int -> [SymTerm] -> Double -> Double -> Double -> Box
-printCalcFuncsIndSp indep space ts from to interval = vcat top [titles,separator,columns]
-        where titles = char indep <> foldr (\term box -> moveRight (space+2) (text . ('(':) . (++")") . show $ term) <> box) nullBox ts
-              separator = text $ replicate (space + 3 + (length . render $ titles)) '-'
-              columns = let funcvals = map (\t -> calcFuncInd indep t from to interval) ts in
-                        indepsToColumn <> (moveRight space $ foldr (\vals box -> valsToColumn vals <> (moveRight space box)) nullBox funcvals)
-              valsToColumn = foldr (\(x,fx) box -> (text . printfFuncValue $ fx) // box) nullBox
-              indepsToColumn = foldr (\x box -> (text . printf "%.3f" $ x) // box) nullBox [from,from+interval..to]
+----------- non-default-using functions -------------------
+
+functionTable :: Double -> Double -> Double -> Int -> Int -> SymTerm -> Char -> Doc
+functionTable from to ival width acc term indep = multipleFunctions from to ival width acc [term] indep
+
+multipleFunctions :: Double -> Double -> Double -> Int -> Int -> [SymTerm] -> Char -> Doc
+multipleFunctions from to ival width acc terms indep = foldr1 ($$) . (header:) . map (foldr1 (<+>) . calcLine) $ [from,ival..to]
+    where header = colHeads $$ headSepLine
+          colHeads = foldr1 (<+>) . map (text . printf ('%':show width++"s") . show) $ terms'
+          headSepLine = foldr1 (<+>) $ replicate (length terms') (text . replicate width $ '-')
+          calcLine x = map (calcFunc x) terms'
+          calcFunc x term = case evalTermP term [(indep,x)] of
+                            Just y -> printfFuncValue width acc $ Value y
+                            Nothing -> printfFuncValue width acc Undefined
+          terms' = (Variable indep):terms
 
 -- Util
 
-v0cat :: Box -> Box -> Box
-v0cat a b = vcat top [a,b]
-
-printfFuncValue :: FuncValue -> String
-printfFuncValue Undefined = "undef"
-printfFuncValue (Value n) = printf "%.3f" n
+printfFuncValue :: Int -> Int -> FuncValue -> Doc
+printfFuncValue width _ Undefined = text $ printf ('%':show width++"s") "undef"
+printfFuncValue width acc (Value n) = text $ printf ('%':show width++"."++show acc++"f") n
