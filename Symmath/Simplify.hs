@@ -61,6 +61,7 @@ simplifyDiff (Difference t1 t2) = Sum (t1) (Product (Number (-1)) t2)
 -- Fractions
 simplifyFrac :: SymTerm -> SymTerm
 simplifyFrac (Fraction t1 t2) | t1 == t2 = Number 1
+                              | t1 == Number 0 = Number 0
 simplifyFrac (Fraction (Number n1) (Number n2)) | isIntegral n1 && isIntegral n2 = Fraction
                                                                                     (Number (n1 / (fromInteger (gcd (round n1) (round n2)))))
                                                                                     (Number (n2 / (fromInteger (gcd (round n1) (round n2)))))
@@ -117,6 +118,7 @@ cleanSum s@(Sum _ _) = listToSum . map (foldr1 consolidSum) . groupBy sumGroupab
 prodToList :: SymTerm -> [SymTerm]
 prodToList (Product t1 t2) = prodToList t1 ++ prodToList t2
 prodToList p@(Power b (Number n)) = map (flip Power (Number n)) . prodToList $ b
+prodToList (Exp t) = [Power (Constant Euler) t]
 prodToList (Number 1) = []
 prodToList t = [t]
 
