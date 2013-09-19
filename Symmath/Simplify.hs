@@ -20,8 +20,8 @@ simplifyOnce p@(Product _ _) = simplifyProd p
 simplifyOnce d@(Difference _ _) = simplifyDiff d
 simplifyOnce f@(Fraction _ _) = simplifyFrac f
 simplifyOnce p@(Power _ _) = simplifyPow p
-simplifyOnce l@(Ln t) = Ln $ simplifyOnce t
-simplifyOnce l@(Log t1 t2) = Log (simplifyOnce t1) (simplifyOnce t2)
+simplifyOnce l@(Ln t) = simplifyLn l
+simplifyOnce l@(Log t1 t2) = simplifyLog l
 simplifyOnce a@(Abs _) = simplifyAbs a
 simplifyOnce s@(Signum t) = Signum $ simplifyOnce t
 simplifyOnce e@(Exp _) = simplifyExp e
@@ -102,6 +102,16 @@ simplifyExp (Exp (Number 1)) = Constant Euler
 -- euler^(ln(x) * y) = x^y. Only this clause; products are sorted so ln's go to the front
 simplifyExp (Exp (Product (Ln t1) t2)) = Power t1 t2
 simplifyExp (Exp t) = Exp $ simplifyOnce t
+
+simplifyLn :: SymTerm -> SymTerm
+simplifyLn (Ln (Number n)) = Number $ log n
+simplifyLn (Ln (Exp t)) = t
+simplifyLn (Ln t) = Ln (simplifyOnce t)
+
+simplifyLog :: SymTerm -> SymTerm
+simplifyLog (Log (Number n1) (Number n2)) = Number $ logBase n1 n2
+simplifyLog (Log t1 (Power t2 t3)) | t1 == t3 = t3
+simplifyLog (Log t1 t2) = Log (simplifyOnce t1) (simplifyOnce t2)
 
 ---------------------------------------------------------------------
 -- List-based simplification algorithms for sums and products. ------
