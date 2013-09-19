@@ -36,17 +36,18 @@ instance Show SymTerm where
     show (Constant c) = show c
     show (Product (Number (-1)) term2) = "(-" ++ (show term2) ++ ")"
     show (Product term1 term2) = (show term1) ++ " * " ++ (show term2)
+    show (Difference term1 term2) = '(' : (show term1) ++ " - " ++ (show term2) ++ ")"
     show (Sum term1 (Product (Number (-1)) term2)) = '(' : (show term1) ++ " - " ++ (show term2) ++ ")"
     show (Sum term1 term2) = '(' : (show term1) ++ " + " ++ (show term2) ++ ")"
-    show (Difference term1 term2) = '(' : (show term1) ++ " - " ++ (show term2) ++ ")"
     show (Fraction term1 term2) = '(' : (show term1) ++ " / " ++ (show term2) ++ ")"
     show (Power term1 term2) = '(' : (show term1) ++ ")^(" ++ (show term2) ++ ")"
     show (Exp term1) = "exp(" ++ show term1 ++ ")"
+    show (Trigo trigo term1) = (map toLower $ show trigo) ++ "(" ++ show term1 ++ ")"
     show (Ln term1) = "ln(" ++ show term1 ++ ")"
     show (Log base term) = "log(" ++ show base ++ "," ++ show term ++ ")"
     show (Abs term) = '|' : show term ++ "|"
     show (Signum term) = "sgn(" ++ show term ++ ")"
-    show (Trigo trigo term1) = (map toLower $ show trigo) ++ "(" ++ show term1 ++ ")"
+    show (UndefP p t) ="undefAt(" ++ show p ++ "," ++ show t ++ ")"
 
 instance Num SymTerm where
     (+) = Sum
