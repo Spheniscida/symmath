@@ -28,8 +28,8 @@ term = spaces *> mathTerm <* spaces
 
 mathTerm :: SymParser
 mathTerm = parens
-   <|> mathFun
-   <|> mathConst
+   <|> try mathFun
+   <|> try mathConst
    <|> var
    <|> num
 
@@ -42,12 +42,14 @@ mathFun = funName <*> parens
 funName :: Parser (SymTerm -> SymTerm)
 funName = Exp       <$ string "exp"
       <|> Ln        <$ string "ln"
+      <|> Abs       <$ string "abs"
+      <|> Signum    <$ string "sgn"
       <|> Trigo Sin <$ string "sin"
       <|> Trigo Cos <$ string "cos"
       <|> Trigo Tan <$ string "tan"
 
 mathConst :: SymParser
-mathConst = Constant Euler <$ char 'e'
+mathConst = Constant Euler <$ string "eu"
         <|> Constant Phi   <$ string "phi"
         <|> Constant Pi    <$ string "pi"
 
