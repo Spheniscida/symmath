@@ -38,7 +38,7 @@ simplifySum (Sum t1 (Product (Number (-1)) t2)) | t1 == t2 = Number 0
 simplifySum (Sum t1@(Product _ _) t2@(Product _ _)) = case prodListIntersectTuple (prodToList t1) (prodToList t2) of
                                                         ([],rest1,rest2) -> cleanSum $ Sum (simplify t1) (simplify t2)
                                                         (common,rest1,rest2) -> Product (listToProd common) (Sum (listToProd rest1) (listToProd rest2))
-simplifySum (Sum t1 t2) = cleanSum $ Sum (simplify t1) (simplify t2)
+simplifySum s@(Sum t1 t2) = cleanSum s
 
 
 -- Products
@@ -50,7 +50,7 @@ simplifyProd (Product (Number 0) _term) = Number 0
 simplifyProd (Product _term (Number 0)) = Number 0
 -- a * b => c (c == a * b)
 simplifyProd (Product (Number n1) (Number n2)) = Number $ n1 * n2
-simplifyProd (Product t1 t2) = cleanProduct $ Product (simplify t1) (simplify t2)
+simplifyProd p@(Product t1 t2) = cleanProduct p
 
 -- Differences
 simplifyDiff :: SymTerm -> SymTerm
@@ -128,10 +128,10 @@ simplifyLog (Log t1 t2) = Log (simplify t1) (simplify t2)
 ---------------------------------------------------------------------
 -- Tidy up products
 cleanProduct :: SymTerm -> SymTerm
-cleanProduct p@(Product _ _) = listToProd . prodListToCommonExps . prodListToPowers . prodToList $ p
+cleanProduct p@(Product _ _) = listToProd . prodListToCommonExps . prodListToPowers . map simplify . prodToList $ p
 
 cleanSum :: SymTerm -> SymTerm
-cleanSum s@(Sum _ _) = listToSum . map (foldr1 consolidSum) . groupBy sumGroupable . sortSumList . sumToList $ s
+cleanSum s@(Sum _ _) = listToSum . map (foldr1 consolidSum) . groupBy sumGroupable . sortSumList . map simplify . sumToList $ s
 
 
 -- Converts a product tree into a list (representing the flat structure of multiplications): (x*y) * ((a*b) * z) = x*y*a*b*z
@@ -188,6 +188,7 @@ sameFacToPower a@(x:xs) | all (==x) xs = Power x (Number . fromIntegral . length
                         | otherwise = listToProd a
 
 sameBase :: SymTerm -> SymTerm -> Bool
+sameBase (Number n1) (Number n2) = True
 sameBase (Power b1 _) (Power b2 _) = b1 == b2
 sameBase a (Power b _) = a == b
 sameBase (Power b _) a = a == b
@@ -197,7 +198,7 @@ sumExponent :: SymTerm -> SymTerm -> SymTerm
 sumExponent (Power b1 e1) (Power b2 e2) | b1 == b2 = Power b1 (Sum e1 e2)
 sumExponent t (Power b e) | t == b = Power b (Sum (Number 1) e)
 sumExponent (Power b e) t | t == b = Power b (Sum (Number 1) e)
-sumExponent t1 t2 = Product t1 t2
+sumExponent t1 t2 = simplify $ Product t1 t2
 
 --
 
@@ -214,6 +215,7 @@ sameExpToProd ts@((Power b e):xs) = if comfac /= []
 
 --            New term   Accumulator
 consolidSum :: SymTerm -> SymTerm -> SymTerm
+consolidSum (Number n1) (Number n2) = simplify $ Sum (Number n1) (Number n2)
 consolidSum (Variable v1) (Variable v2) | v1 == v2 = Product (Number 2) (Variable v1)
 consolidSum (Variable v1) (Product (Number n) (Variable v2)) | v1 == v2 = Product (Number $ n+1) (Variable v1)
 consolidSum (Product (Number n) (Variable v2)) (Variable v1)  | v1 == v2 = Product (Number $ n+1) (Variable v1)
@@ -235,6 +237,8 @@ prodTermCompare (Number n1) (Number n2) = n1 `compare` n2
 prodTermCompare (Variable v1) (Variable v2) = v1 `compare` v2
 prodTermCompare (Number n1) (Variable v1) = LT
 prodTermCompare (Variable v1) (Number n1) = GT
+prodTermCompare (Number n) term = LT
+prodTermCompare term (Number n) = GT
 prodTermCompare (Power b1 _) (Power b2 _) = b1 `prodTermCompare` b2
 prodTermCompare (Ln a) (Ln b) = a `prodTermCompare` b
 prodTermCompare (Ln _) _ = LT
