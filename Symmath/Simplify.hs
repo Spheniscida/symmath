@@ -128,7 +128,7 @@ simplifyLog (Log t1 t2) = Log (simplify t1) (simplify t2)
 ---------------------------------------------------------------------
 -- Tidy up products
 cleanProduct :: SymTerm -> SymTerm
-cleanProduct p@(Product _ _) = listToProd . prodListToCommonExps . prodListToPowers . map simplify . prodToList $ p
+cleanProduct p@(Product _ _) = listToProd . sortProductList . prodListToCommonExps . prodListToPowers . map simplify . prodToList $ p
 
 cleanSum :: SymTerm -> SymTerm
 cleanSum s@(Sum _ _) = listToSum . map (foldr1 consolidSum) . groupBy sumGroupable . sortSumList . map simplify . sumToList $ s
