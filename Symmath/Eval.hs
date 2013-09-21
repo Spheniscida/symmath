@@ -43,8 +43,8 @@ evalP (Variable v) = do
     bindings <- ask
     let val = lookupVar bindings v
     if val == Nothing
-    then return Nothing
-    else return val
+        then return Nothing
+        else return val
 evalP (Constant c) = return . Just . constToNumber $ c
 evalP (Number n) = return . Just $ n
 evalP (Sum t1 t2) = rEvalBinary (+) t1 t2
@@ -69,16 +69,16 @@ rEvalUnary :: (Double -> Double) -> SymTerm -> Reader VarBind (Maybe Double)
 rEvalUnary f t = do
     et <- evalP t
     if Nothing /= et
-    then return . Just $ f . fromMb $ et
-    else return Nothing
+        then return . Just $ f . fromMb $ et
+        else return Nothing
 
 rEvalBinary :: (Double -> Double -> Double) -> SymTerm -> SymTerm -> Reader VarBind (Maybe Double)
 rEvalBinary op t1 t2 = do
     et1 <- evalP t1
     et2 <- evalP t2
     if Nothing /= et1 && Nothing /= et2
-    then return . Just $ (fromMb et1) `op` (fromMb et2)
-    else return Nothing
+        then return . Just $ (fromMb et1) `op` (fromMb et2)
+        else return Nothing
 
 -- Utilities
 
