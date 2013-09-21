@@ -20,8 +20,8 @@ simplifyOnce p@(Product _ _) = simplifyProd p
 simplifyOnce d@(Difference _ _) = simplifyDiff d
 simplifyOnce f@(Fraction _ _) = simplifyFrac f
 simplifyOnce p@(Power _ _) = simplifyPow p
-simplifyOnce l@(Ln t) = Ln $ simplifyOnce t
-simplifyOnce l@(Log t1 t2) = Log (simplifyOnce t1) (simplifyOnce t2)
+simplifyOnce l@(Ln t) = simplifyLn l
+simplifyOnce l@(Log t1 t2) = simplifyLog l
 simplifyOnce a@(Abs _) = simplifyAbs a
 simplifyOnce s@(Signum t) = Signum $ simplifyOnce t
 simplifyOnce e@(Exp _) = simplifyExp e
@@ -36,9 +36,9 @@ simplifySum (Sum (Number n1) (Number n2)) = Number $ n1 + n2
 -- n1 + (-n1) = 0
 simplifySum (Sum t1 (Product (Number (-1)) t2)) | t1 == t2 = Number 0
 simplifySum (Sum t1@(Product _ _) t2@(Product _ _)) = case prodListIntersectTuple (prodToList t1) (prodToList t2) of
-                                                        ([],rest1,rest2) -> cleanSum $ Sum (simplifyOnce t1) (simplifyOnce t2)
+                                                        ([],rest1,rest2) -> cleanSum $ Sum (simplify t1) (simplify t2)
                                                         (common,rest1,rest2) -> Product (listToProd common) (Sum (listToProd rest1) (listToProd rest2))
-simplifySum (Sum t1 t2) = cleanSum $ Sum (simplifyOnce t1) (simplifyOnce t2)
+simplifySum s@(Sum t1 t2) = cleanSum s
 
 
 -- Products
@@ -50,7 +50,7 @@ simplifyProd (Product (Number 0) _term) = Number 0
 simplifyProd (Product _term (Number 0)) = Number 0
 -- a * b => c (c == a * b)
 simplifyProd (Product (Number n1) (Number n2)) = Number $ n1 * n2
-simplifyProd (Product t1 t2) = cleanProduct $ Product (simplifyOnce t1) (simplifyOnce t2)
+simplifyProd p@(Product t1 t2) = cleanProduct p
 
 -- Differences
 simplifyDiff :: SymTerm -> SymTerm
@@ -61,6 +61,7 @@ simplifyDiff (Difference t1 t2) = Sum (t1) (Product (Number (-1)) t2)
 -- Fractions
 simplifyFrac :: SymTerm -> SymTerm
 simplifyFrac (Fraction t1 t2) | t1 == t2 = Number 1
+                              | t1 == Number 0 = Number 0
 simplifyFrac (Fraction (Number n1) (Number n2)) | isIntegral n1 && isIntegral n2 = Fraction
                                                                                     (Number (n1 / (fromInteger (gcd (round n1) (round n2)))))
                                                                                     (Number (n2 / (fromInteger (gcd (round n1) (round n2)))))
@@ -80,7 +81,17 @@ simplifyPow (Power b (Number 0)) = Number 1
 simplifyPow (Power b (Number 1)) = b
 -- e^x = exp(x)
 simplifyPow (Power (Constant Euler) t) = Exp t
-simplifyPow (Power t1 t2) = Power (simplifyOnce t1) (simplifyOnce t2)
+-- 10^(log(10,y)) = y
+simplifyPow (Power b1 (Log b2 t)) | b1 == b2 = t
+simplifyPow (Power b1 p@(Product _ _)) | length isAnyLogBase > 0 = let ((Log b2 e2):ts) = isAnyLogBase in Power (e2) (listToProd ((prodToList p) \\ [Log b2 e2]))
+    where isAnyLogBase = filter (hasBase b1) . filter isLog . sortProductList . prodToList $ p
+          isLog t = case t of
+                        (Log _ _) -> True
+                        _ -> False
+          hasBase b l = case l of
+                        (Log b1 e) -> b == b1
+                        _ -> False
+simplifyPow (Power t1 t2) = Power (simplify t1) (simplify t2)
 
 simplifyAbs :: SymTerm -> SymTerm
 simplifyAbs (Abs (Number n)) = Number $ abs n
@@ -91,7 +102,7 @@ simplifyAbs (Abs (Product t1 t2)) = Product (Abs t1) (Abs t2)
 simplifyAbs (Abs (Fraction t1 t2)) = Fraction (Abs t1) (Abs t2)
 -- abs(a^b) = abs(a)^b
 simplifyAbs (Abs (Power b e)) = (Power (Abs b) e)
-simplifyAbs (Abs t) = Abs $ simplifyOnce t
+simplifyAbs (Abs t) = Abs $ simplify t
 
 simplifyExp :: SymTerm -> SymTerm
 -- euler^0 = 1
@@ -100,23 +111,34 @@ simplifyExp (Exp (Number 0)) = Number 1
 simplifyExp (Exp (Number 1)) = Constant Euler
 -- euler^(ln(x) * y) = x^y. Only this clause; products are sorted so ln's go to the front
 simplifyExp (Exp (Product (Ln t1) t2)) = Power t1 t2
-simplifyExp (Exp t) = Exp $ simplifyOnce t
+simplifyExp (Exp t) = Exp $ simplify t
+
+simplifyLn :: SymTerm -> SymTerm
+simplifyLn (Ln (Number n)) = Number $ log n
+simplifyLn (Ln (Exp t)) = t
+simplifyLn (Ln t) = Ln (simplify t)
+
+simplifyLog :: SymTerm -> SymTerm
+simplifyLog (Log (Number n1) (Number n2)) = Number $ logBase n1 n2
+simplifyLog (Log t1 (Power t2 t3)) | t1 == t2 = t3
+simplifyLog (Log t1 t2) = Log (simplify t1) (simplify t2)
 
 ---------------------------------------------------------------------
 -- List-based simplification algorithms for sums and products. ------
 ---------------------------------------------------------------------
 -- Tidy up products
 cleanProduct :: SymTerm -> SymTerm
-cleanProduct p@(Product _ _) = listToProd . prodListToPowers . prodListToCommonExps . prodToList $ p
+cleanProduct p@(Product _ _) = listToProd . sortProductList . prodListToCommonExps . prodListToPowers . map simplify . prodToList $ p
 
 cleanSum :: SymTerm -> SymTerm
-cleanSum s@(Sum _ _) = listToSum . map (foldr1 consolidSum) . groupBy sumGroupable . sortSumList . sumToList $ s
+cleanSum s@(Sum _ _) = listToSum . map (foldr1 consolidSum) . groupBy sumGroupable . sortSumList . map simplify . sumToList $ s
 
 
 -- Converts a product tree into a list (representing the flat structure of multiplications): (x*y) * ((a*b) * z) = x*y*a*b*z
 prodToList :: SymTerm -> [SymTerm]
 prodToList (Product t1 t2) = prodToList t1 ++ prodToList t2
 prodToList p@(Power b (Number n)) = map (flip Power (Number n)) . prodToList $ b
+prodToList (Exp t) = [Power (Constant Euler) t]
 prodToList (Number 1) = []
 prodToList t = [t]
 
@@ -166,6 +188,7 @@ sameFacToPower a@(x:xs) | all (==x) xs = Power x (Number . fromIntegral . length
                         | otherwise = listToProd a
 
 sameBase :: SymTerm -> SymTerm -> Bool
+sameBase (Number n1) (Number n2) = True
 sameBase (Power b1 _) (Power b2 _) = b1 == b2
 sameBase a (Power b _) = a == b
 sameBase (Power b _) a = a == b
@@ -175,7 +198,7 @@ sumExponent :: SymTerm -> SymTerm -> SymTerm
 sumExponent (Power b1 e1) (Power b2 e2) | b1 == b2 = Power b1 (Sum e1 e2)
 sumExponent t (Power b e) | t == b = Power b (Sum (Number 1) e)
 sumExponent (Power b e) t | t == b = Power b (Sum (Number 1) e)
-sumExponent t1 t2 = Product t1 t2
+sumExponent t1 t2 = simplify $ Product t1 t2
 
 --
 
@@ -185,15 +208,14 @@ sameExpToProd ts@((Power b e):xs) = if comfac /= []
                                     then Power (inParens) (listToProd comfac)
                                     else inParens
     where comfac = foldr (\(Power b e) a -> prodListIntersect a (prodToList e)) (prodToList e) xs
-          inParens = listToProd $ map (\(Power b e) -> let remainfac = (listToProd ((prodToList e) \\ comfac)) in
+          inParens = listToProd $ map (\(Power b e) -> let remainfac = listToProd (prodToList e \\ comfac) in
                                                        if remainfac == Number 1
                                                        then b
                                                        else Power b remainfac) ts
 
--- Same for sums
-
 --            New term   Accumulator
 consolidSum :: SymTerm -> SymTerm -> SymTerm
+consolidSum (Number n1) (Number n2) = simplify $ Sum (Number n1) (Number n2)
 consolidSum (Variable v1) (Variable v2) | v1 == v2 = Product (Number 2) (Variable v1)
 consolidSum (Variable v1) (Product (Number n) (Variable v2)) | v1 == v2 = Product (Number $ n+1) (Variable v1)
 consolidSum (Product (Number n) (Variable v2)) (Variable v1)  | v1 == v2 = Product (Number $ n+1) (Variable v1)
@@ -201,7 +223,6 @@ consolidSum (Product (Number n1) t1) (Product (Number n2) t2) | t1 == t2 = Produ
 consolidSum t1 t2 = Sum t1 t2
 
 -- Comparison/sort
---
 sortProductList :: [SymTerm] -> [SymTerm]
 sortProductList = sortBy prodTermCompare
 
@@ -216,9 +237,13 @@ prodTermCompare (Number n1) (Number n2) = n1 `compare` n2
 prodTermCompare (Variable v1) (Variable v2) = v1 `compare` v2
 prodTermCompare (Number n1) (Variable v1) = LT
 prodTermCompare (Variable v1) (Number n1) = GT
+prodTermCompare (Number n) term = LT
+prodTermCompare term (Number n) = GT
 prodTermCompare (Power b1 _) (Power b2 _) = b1 `prodTermCompare` b2
+prodTermCompare (Ln a) (Ln b) = a `prodTermCompare` b
 prodTermCompare (Ln _) _ = LT
 prodTermCompare _ (Ln _) = GT
+prodTermCompare (Log b1 e1) (Log b2 e2) = e1 `prodTermCompare` e2
 prodTermCompare (Power b1 _) t | b1 == t = GT
                                | otherwise = b1 `prodTermCompare` t
 prodTermCompare t (Power b2 _) | b2 == t = LT
@@ -234,6 +259,7 @@ prodExpTermCompare (Variable v1) (Variable v2) = v1 `compare` v2
 prodExpTermCompare (Number n1) (Variable v1) = LT
 prodExpTermCompare (Variable v1) (Number n1) = GT
 prodExpTermCompare (Power b1 e1) (Power b2 e2) = e1 `prodExpTermCompare` e2
+prodExpTermCompare (Ln a) (Ln b) = a `prodExpTermCompare` b
 prodExpTermCompare (Ln _) _ = LT
 prodExpTermCompare _ (Ln _) = GT
 prodExpTermCompare (Power b1 _) t | b1 == t = LT

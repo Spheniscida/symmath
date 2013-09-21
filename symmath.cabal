@@ -1,0 +1,18 @@
+name:                symmath
+version:             0.1.0.0
+synopsis:            A library to work with mathematical terms, functions, equations etc.
+-- description:         
+homepage:            https://github.com/Spheniscida/symmath
+license:             MIT
+license-file:        LICENSE
+author:              [See CONTRIBUTORS file]
+maintainer:          lbo@spheniscida.de
+-- copyright:           
+category:            Math
+build-type:          Simple
+cabal-version:       >=1.8
+
+Library
+  exposed-modules:     Symmath, Symmath.Assoc, Symmath.Eval, Symmath.Terms, Symmath.Functiontable, Symmath.Constants, Symmath.Derivate, Symmath.Simplify, Symmath.Util, Symmath.Parse
+  -- other-modules:       
+  build-depends:       base ==4.6.*, mtl ==2.1.*, pretty ==1.1.*, parsec ==3.1.*, HUnit ==1.2.*
