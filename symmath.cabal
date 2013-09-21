@@ -13,6 +13,7 @@ build-type:          Simple
 cabal-version:       >=1.8
 
 Library
-  exposed-modules:     Symmath, Symmath.Assoc, Symmath.Eval, Symmath.Terms, Symmath.Functiontable, Symmath.Constants, Symmath.Derivate, Symmath.Simplify, Symmath.Util, Symmath.Parse
-  -- other-modules:       
+  exposed-modules:     Symmath
+  other-modules:       Symmath.Assoc, Symmath.Constants, Symmath.Util, Symmath.Eval,
+                       Symmath.Terms, Symmath.Functiontable, Symmath.Derivate, Symmath.Simplify, Symmath.Parse
   build-depends:       base ==4.6.*, mtl ==2.1.*, pretty ==1.1.*, parsec ==3.1.*, HUnit ==1.2.*
