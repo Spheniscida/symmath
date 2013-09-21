@@ -38,7 +38,7 @@ functionTable :: Double -> Double -> Double -> Int -> Int -> SymTerm -> Char -> 
 functionTable from to ival width acc term indep = multipleFunctions from to ival width acc [term] indep
 
 multipleFunctions :: Double -> Double -> Double -> Int -> Int -> [SymTerm] -> Char -> Doc
-multipleFunctions from to ival width acc terms indep = foldr1 ($$) . (header:) . map (foldr1 (<+>) . calcLine) $ [from,ival..to]
+multipleFunctions from to ival width acc terms indep = foldr1 ($$) . (header:) . map (foldr1 (<+>) . calcLine) $ [from,(from+ival)..to]
     where header = colHeads $$ headSepLine
           colHeads = foldr1 (<+>) . map (text . printf ('%':show width++"s") . show) $ terms'
           headSepLine = foldr1 (<+>) $ replicate (length terms') (text . replicate width $ '-')
