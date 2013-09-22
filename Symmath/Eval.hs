@@ -58,8 +58,8 @@ evalP (Ln t) = rEvalUnary log t
 evalP (Log t1 t2) = rEvalBinary logBase t1 t2
 evalP (Signum t) = rEvalUnary signum t
 evalP (Abs t) = evalP t >>= \et -> if Nothing /= et
-                                   then if fromMb et < 0
-                                        then return . Just $ (-1) * fromMb et
+                                   then if fromJust et < 0
+                                        then return . Just $ (-1) * fromJust et
                                         else return et
                                    else return Nothing
 
@@ -69,7 +69,7 @@ rEvalUnary :: (Double -> Double) -> SymTerm -> Reader VarBind (Maybe Double)
 rEvalUnary f t = do
     et <- evalP t
     if Nothing /= et
-        then return . Just $ f . fromMb $ et
+        then return . Just $ f . fromJust $ et
         else return Nothing
 
 rEvalBinary :: (Double -> Double -> Double) -> SymTerm -> SymTerm -> Reader VarBind (Maybe Double)
@@ -77,7 +77,7 @@ rEvalBinary op t1 t2 = do
     et1 <- evalP t1
     et2 <- evalP t2
     if Nothing /= et1 && Nothing /= et2
-        then return . Just $ (fromMb et1) `op` (fromMb et2)
+        then return . Just $ (fromJust et1) `op` (fromJust et2)
         else return Nothing
 
 -- Utilities
