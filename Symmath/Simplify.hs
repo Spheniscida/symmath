@@ -25,6 +25,7 @@ simplifyOnce l@(Log t1 t2) = simplifyLog l
 simplifyOnce a@(Abs _) = simplifyAbs a
 simplifyOnce s@(Signum t) = Signum $ simplifyOnce t
 simplifyOnce e@(Exp _) = simplifyExp e
+simplifyOnce u@(Unit _ _) = simplifyUnit u
 simplifyOnce u@(UndefP d t) = UndefP d $ simplifyOnce t
 simplifyOnce a = a
 
@@ -123,6 +124,10 @@ simplifyLog (Log (Number n1) (Number n2)) = Number $ logBase n1 n2
 simplifyLog (Log t1 (Power t2 t3)) | t1 == t2 = t3
 simplifyLog (Log t1 t2) = Log (simplify t1) (simplify t2)
 
+simplifyUnit :: SymTerm -> SymTerm
+simplifyUnit (Unit Kilo Gram) = Unit One Kilogram
+simplifyUnit u = u
+
 ---------------------------------------------------------------------
 -- List-based simplification algorithms for sums and products. ------
 ---------------------------------------------------------------------
@@ -133,6 +138,9 @@ cleanProduct p@(Product _ _) = listToProd . sortProductList . prodListToCommonEx
 cleanSum :: SymTerm -> SymTerm
 cleanSum s@(Sum _ _) = listToSum . map (foldr1 consolidSum) . groupBy sumGroupable . sortSumList . map simplify . sumToList $ s
 
+cleanUnits :: SymTerm -> SymTerm
+cleanUnits u@(Product _ _) = listToProd . concat . map simplifyUnits . groupBy unitGroupable . sortBy unitProdCompare . 
+    concat . map derivedToBase . concat . map prodToList . map expandPrefix . concat . map expandPower . prodToList $ u
 
 -- Converts a product tree into a list (representing the flat structure of multiplications): (x*y) * ((a*b) * z) = x*y*a*b*z
 prodToList :: SymTerm -> [SymTerm]
@@ -222,6 +230,28 @@ consolidSum (Product (Number n) (Variable v2)) (Variable v1)  | v1 == v2 = Produ
 consolidSum (Product (Number n1) t1) (Product (Number n2) t2) | t1 == t2 = Product (Number $ n1 + n2) t1
 consolidSum t1 t2 = Sum t1 t2
 
+-- Units
+
+derivedToBase :: SymTerm -> [SymTerm]
+derivedToBase (Unit One Newton) = [kilogram, meter, recipUnit second, recipUnit second]
+derivedToBase (Unit One Pascal) = [kilogram, recipUnit second, recipUnit second, recipUnit meter]
+derivedToBase u = [u]
+
+simplifyUnits :: [SymTerm] -> [SymTerm]
+simplifyUnits m | (derivedToBase newton) `elems` m = newton : simplifyUnits (m \\ (derivedToBase newton))
+                | (derivedToBase pascal) `elems` m = pascal : simplifyUnits (m \\ (derivedToBase pascal))
+                | otherwise = m
+
+expandPower :: SymTerm -> [SymTerm]
+expandPower p@(Power t (Number n)) | isIntegral n && n > 0 = replicate (round n) t
+                                   | isIntegral n && n < 0 = replicate (abs . round $ n) (Power t (Number (-1)))
+                                   | otherwise = [p]
+expandPower x = [x]
+
+expandPrefix :: SymTerm -> SymTerm
+expandPrefix (Unit p u) = Product (prefToPower p) (Unit One u)
+expandPrefix t = t
+
 -- Comparison/sort
 sortProductList :: [SymTerm] -> [SymTerm]
 sortProductList = sortBy prodTermCompare
@@ -285,6 +315,15 @@ sumTermCompare t (Number _) = GT
 sumTermCompare t (Variable _) = GT
 sumTermCompare t1 t2 = EQ
 
+
+unitProdCompare :: SymTerm -> SymTerm -> Ordering
+unitProdCompare (Unit _ a) (Unit _ b) = compare a b
+unitProdCompare (Unit _ _) t = GT
+unitProdCompare t (Unit _ _) = LT
+unitProdCompare (Power t1 e) t2 = t1 `unitProdCompare` t2
+unitProdCompare t1 (Power t2 e) = t1 `unitProdCompare` t2
+unitProdCompare t1 t2 = EQ
+
 -- Grouping predicates
 --
 
@@ -310,3 +349,6 @@ sumGroupable (Product (Number n) (Variable b)) (Variable a) | a == b = True
 sumGroupable (Product t1 t2) (Product t3 t4) = t1 == t3 || t1 == t4 || t2 == t3 || t2 == t4
 sumGroupable _ _ = False
 
+unitGroupable :: SymTerm -> SymTerm -> Bool
+unitGroupable (Unit _ _) (Unit _ _) = True
+unitGroupable _ _ = False
