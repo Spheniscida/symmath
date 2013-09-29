@@ -4,6 +4,7 @@ import Data.List
 
 import Symmath.Util
 import Symmath.Terms
+import Symmath.Eval
 
 -- simplify terms with simplifyOnce until the simplified version is the same as the one from the last simplification step
 simplify :: SymTerm -> SymTerm
@@ -62,6 +63,7 @@ simplifyDiff (Difference t1 t2) = Sum (t1) (Product (Number (-1)) t2)
 -- Fractions
 simplifyFrac :: SymTerm -> SymTerm
 simplifyFrac (Fraction t1 t2) | t1 == t2 = Number 1
+                              | t2 == Number 1 = t1
                               | t1 == Number 0 = Number 0
 simplifyFrac (Fraction (Number n1) (Number n2)) | isIntegral n1 && isIntegral n2 = Fraction
                                                                                     (Number (n1 / (fromInteger (gcd (round n1) (round n2)))))
@@ -139,8 +141,9 @@ cleanSum :: SymTerm -> SymTerm
 cleanSum s@(Sum _ _) = listToSum . map (foldr1 consolidSum) . groupBy sumGroupable . sortSumList . map simplify . sumToList $ s
 
 cleanUnits :: SymTerm -> SymTerm
-cleanUnits u = listToProd . concat . map simplifyUnits . groupBy unitGroupable . sortBy unitProdCompare .
+cleanUnits u | containsUnits . prodToList $ u = listToProd . concat . map simplifyUnits . groupBy unitGroupable . sortBy unitProdCompare .
     concat . map derivedToBase . concat . map prodToList . map expandPrefix . concat . map expandPower . prodToList $ u
+             | otherwise = u
 
 -- Converts a product tree into a list (representing the flat structure of multiplications): (x*y) * ((a*b) * z) = x*y*a*b*z
 prodToList :: SymTerm -> [SymTerm]
@@ -231,7 +234,7 @@ consolidSum (Product (Number n1) t1) (Product (Number n2) t2) | t1 == t2 = Produ
 consolidSum t1 t2 = Sum t1 t2
 
 -- Units
-
+-- EXTEND HERE!
 derivedToBase :: SymTerm -> [SymTerm]
 derivedToBase (Unit One Newton) = [kilogram, meter, recipUnit second, recipUnit second]
 derivedToBase (Unit One Pascal) = [kilogram, recipUnit second, recipUnit second, recipUnit meter]
@@ -249,8 +252,18 @@ expandPower p@(Power t (Number n)) | isIntegral n && n > 0 = replicate (round n)
 expandPower x = [x]
 
 expandPrefix :: SymTerm -> SymTerm
-expandPrefix (Unit p u) = Product (prefToPower p) (Unit One u)
+expandPrefix (Unit p u) | p /= One = Product (prefToPower p) (Unit One u)
 expandPrefix t = t
+
+makePrefix :: [SymTerm] -> [SymTerm]
+makePrefix l = restList ++ [Number . fromMb . evalTerm $ Fraction numProd r,addPref unit decPrefix]
+    where numProd = simplify . foldr1 (*) . filter isNumber $ l
+          restList = filter (not . isNumber) l \\ [unit]
+          decExp = let (Number n) = numProd in floor . logBase 10 $ n
+          decPrefix = expToPrefix decExp
+          unit = fromMb . find (\x -> containsUnits [x]) $ l
+          addPref (Unit p u) p2 = let (Power (Number 10) (Number e1)) = prefToPower p; (Power (Number 10) (Number e2)) = prefToPower p2 in Unit (expToPrefix . round $ e1+e2) u
+          r = Number $ fromInteger (prefToExp decPrefix)
 
 -- Comparison/sort
 sortProductList :: [SymTerm] -> [SymTerm]
@@ -315,7 +328,7 @@ sumTermCompare t (Number _) = GT
 sumTermCompare t (Variable _) = GT
 sumTermCompare t1 t2 = EQ
 
-
+-- Push units to the end
 unitProdCompare :: SymTerm -> SymTerm -> Ordering
 unitProdCompare (Unit _ a) (Unit _ b) = compare a b
 unitProdCompare (Power t1 e) t2 = t1 `unitProdCompare` t2
@@ -355,3 +368,14 @@ unitGroupable (Power (Unit _ _) _) (Unit _ _) = True
 unitGroupable (Unit _ _) (Power (Unit _ _) _) = True
 unitGroupable (Power (Unit _ _) _) (Power (Unit _ _) _) = True
 unitGroupable _ _ = False
+
+-- Helpers
+
+containsUnits :: [SymTerm] -> Bool
+containsUnits ((Unit _ _):xs) = True
+containsUnits (x:xs) = containsUnits xs
+containsUnits [] = False
+
+isNumber :: SymTerm -> Bool
+isNumber (Number _) = True
+isNumber _ = False
