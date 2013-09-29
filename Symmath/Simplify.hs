@@ -51,7 +51,7 @@ simplifyProd (Product (Number 0) _term) = Number 0
 simplifyProd (Product _term (Number 0)) = Number 0
 -- a * b => c (c == a * b)
 simplifyProd (Product (Number n1) (Number n2)) = Number $ n1 * n2
-simplifyProd p@(Product t1 t2) = cleanProduct p
+simplifyProd p@(Product t1 t2) = cleanUnits . cleanProduct $ p
 
 -- Differences
 simplifyDiff :: SymTerm -> SymTerm
@@ -139,7 +139,7 @@ cleanSum :: SymTerm -> SymTerm
 cleanSum s@(Sum _ _) = listToSum . map (foldr1 consolidSum) . groupBy sumGroupable . sortSumList . map simplify . sumToList $ s
 
 cleanUnits :: SymTerm -> SymTerm
-cleanUnits u@(Product _ _) = listToProd . concat . map simplifyUnits . groupBy unitGroupable . sortBy unitProdCompare . 
+cleanUnits u = listToProd . concat . map simplifyUnits . groupBy unitGroupable . sortBy unitProdCompare .
     concat . map derivedToBase . concat . map prodToList . map expandPrefix . concat . map expandPower . prodToList $ u
 
 -- Converts a product tree into a list (representing the flat structure of multiplications): (x*y) * ((a*b) * z) = x*y*a*b*z
@@ -318,10 +318,10 @@ sumTermCompare t1 t2 = EQ
 
 unitProdCompare :: SymTerm -> SymTerm -> Ordering
 unitProdCompare (Unit _ a) (Unit _ b) = compare a b
-unitProdCompare (Unit _ _) t = GT
-unitProdCompare t (Unit _ _) = LT
 unitProdCompare (Power t1 e) t2 = t1 `unitProdCompare` t2
 unitProdCompare t1 (Power t2 e) = t1 `unitProdCompare` t2
+unitProdCompare (Unit _ _) t = GT
+unitProdCompare t (Unit _ _) = LT
 unitProdCompare t1 t2 = EQ
 
 -- Grouping predicates
@@ -351,4 +351,7 @@ sumGroupable _ _ = False
 
 unitGroupable :: SymTerm -> SymTerm -> Bool
 unitGroupable (Unit _ _) (Unit _ _) = True
+unitGroupable (Power (Unit _ _) _) (Unit _ _) = True
+unitGroupable (Unit _ _) (Power (Unit _ _) _) = True
+unitGroupable (Power (Unit _ _) _) (Power (Unit _ _) _) = True
 unitGroupable _ _ = False
