@@ -238,11 +238,16 @@ consolidSum t1 t2 = Sum t1 t2
 derivedToBase :: SymTerm -> [SymTerm]
 derivedToBase (Unit One Newton) = [kilogram, meter, recipUnit second, recipUnit second]
 derivedToBase (Unit One Pascal) = [kilogram, recipUnit second, recipUnit second, recipUnit meter]
+derivedToBase (Unit One Joule) = [kilogram, meter, meter, recipUnit second, recipUnit second]
+derivedToBase (Unit One Watt) = [kilogram, meter, meter, recipUnit second, recipUnit second, recipUnit second]
 derivedToBase u = [u]
 
 simplifyUnits :: [SymTerm] -> [SymTerm]
-simplifyUnits m | (derivedToBase newton) `elems` m = newton : simplifyUnits (m \\ (derivedToBase newton))
+simplifyUnits m
+                | (derivedToBase watt) `elems` m = watt : simplifyUnits (m \\ (derivedToBase watt))
+                | (derivedToBase joule) `elems` m = joule : simplifyUnits (m \\ (derivedToBase joule))
                 | (derivedToBase pascal) `elems` m = pascal : simplifyUnits (m \\ (derivedToBase pascal))
+                | (derivedToBase newton) `elems` m = newton : simplifyUnits (m \\ (derivedToBase newton))
                 | otherwise = m
 
 expandPower :: SymTerm -> [SymTerm]

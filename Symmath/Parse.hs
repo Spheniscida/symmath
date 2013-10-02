@@ -30,6 +30,7 @@ mathTerm :: SymParser
 mathTerm = parens
    <|> try mathFun
    <|> try mathConst
+   <|> try unit
    <|> var
    <|> num
 
@@ -52,6 +53,12 @@ mathConst :: SymParser
 mathConst = Constant Euler <$ string "eu"
         <|> Constant Phi   <$ string "phi"
         <|> Constant Pi    <$ string "pi"
+
+unit :: SymParser
+unit = char '_' *> unitTable
+
+unitTable :: SymParser
+unitTable =
 
 var :: SymParser
 var = Variable <$> letter

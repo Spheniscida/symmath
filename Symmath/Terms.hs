@@ -60,6 +60,8 @@ data Unit = -- SI base
             | Gram
             | Newton
             | Pascal
+            | Joule
+            | Watt
              deriving (Eq,Ord,Show)
 
 
@@ -144,3 +146,5 @@ second = Unit One Second
 ampere = Unit One Ampere
 mole = Unit One Mole
 pascal = Unit One Pascal
+joule = Unit One Joule
+watt = Unit One Watt
