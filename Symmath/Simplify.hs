@@ -48,6 +48,7 @@ simplifyProd :: SymTerm -> SymTerm
 simplifyProd (Product (Number 0) _term) = Number 0
 -- x * 0 = 0
 simplifyProd (Product _term (Number 0)) = Number 0
+simplifyProd (Product (Number (-1)) (Product (Number (-1)) t)) = t
 -- a * b => c (c == a * b)
 simplifyProd (Product (Number n1) (Number n2)) = Number $ n1 * n2
 simplifyProd p@(Product t1 t2) = cleanProduct p
@@ -56,7 +57,7 @@ simplifyProd p@(Product t1 t2) = cleanProduct p
 simplifyDiff :: SymTerm -> SymTerm
 -- Numbers
 simplifyDiff (Difference (Number n1) (Number n2)) = Number $ n1 - n2
-simplifyDiff (Difference t1 t2) = Sum (t1) (Product (Number (-1)) t2)
+simplifyDiff (Difference t1 t2) = Sum (t1) (listToSum . map (Product (Number (-1))) . diffSumToSumList $ t2)
 
 -- Fractions
 simplifyFrac :: SymTerm -> SymTerm
@@ -131,7 +132,7 @@ cleanProduct :: SymTerm -> SymTerm
 cleanProduct p@(Product _ _) = listToProd . sortProductList . prodListToCommonExps . prodListToPowers . map simplify . prodToList $ p
 
 cleanSum :: SymTerm -> SymTerm
-cleanSum s@(Sum _ _) = listToSum . map (foldr1 consolidSum) . groupBy sumGroupable . sortSumList . map simplify . sumToList $ s
+cleanSum s@(Sum _ _) = listToSum . map (foldr1 consolidSum) . groupBy sumGroupable . sortSumList . map simplify . diffSumToSumList $ s
 
 
 -- Converts a product tree into a list (representing the flat structure of multiplications): (x*y) * ((a*b) * z) = x*y*a*b*z
@@ -158,6 +159,11 @@ listToSum [] = Number 0
 listToSum [t] = t
 listToSum ((Number 0):ts) = listToSum ts
 listToSum (t:ts) = Sum t (listToSum ts)
+
+diffSumToSumList :: SymTerm -> [SymTerm]
+diffSumToSumList (Sum t1 t2) = diffSumToSumList t1 ++ diffSumToSumList t2
+diffSumToSumList (Difference t1 t2) = diffSumToSumList t1 ++ (map (Product (Number (-1))) $ diffSumToSumList t2)
+diffSumToSumList t = [t]
 
 --
 
@@ -218,7 +224,7 @@ consolidSum :: SymTerm -> SymTerm -> SymTerm
 consolidSum (Number n1) (Number n2) = simplify $ Sum (Number n1) (Number n2)
 consolidSum (Variable v1) (Variable v2) | v1 == v2 = Product (Number 2) (Variable v1)
 consolidSum (Variable v1) (Product (Number n) (Variable v2)) | v1 == v2 = Product (Number $ n+1) (Variable v1)
-consolidSum (Product (Number n) (Variable v2)) (Variable v1)  | v1 == v2 = Product (Number $ n+1) (Variable v1)
+consolidSum (Product (Number n) t1) t2 | t1 == t2 = Product (Number $ n+1) t1
 consolidSum (Product (Number n1) t1) (Product (Number n2) t2) | t1 == t2 = Product (Number $ n1 + n2) t1
 consolidSum t1 t2 = Sum t1 t2
 
