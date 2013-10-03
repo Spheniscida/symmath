@@ -35,9 +35,6 @@ simplifySum :: SymTerm -> SymTerm
 simplifySum (Sum (Number n1) (Number n2)) = Number $ n1 + n2
 -- n1 + (-n1) = 0
 simplifySum (Sum t1 (Product (Number (-1)) t2)) | t1 == t2 = Number 0
-simplifySum (Sum t1@(Product _ _) t2@(Product _ _)) = case prodListIntersectTuple (prodToList t1) (prodToList t2) of
-                                                        ([],rest1,rest2) -> cleanSum $ Sum (simplify t1) (simplify t2)
-                                                        (common,rest1,rest2) -> Product (listToProd common) (Sum (listToProd rest1) (listToProd rest2))
 simplifySum s@(Sum t1 t2) = cleanSum s
 
 
@@ -132,8 +129,7 @@ cleanProduct :: SymTerm -> SymTerm
 cleanProduct p@(Product _ _) = listToProd . sortProductList . prodListToCommonExps . prodListToPowers . map simplify . prodToList $ p
 
 cleanSum :: SymTerm -> SymTerm
-cleanSum s@(Sum _ _) = listToSum . map (foldr1 consolidSum) . groupBy sumGroupable . sortSumList . map simplify . diffSumToSumList $ s
-
+cleanSum s@(Sum _ _) = comFac . listToSum . map (foldr1 consolidSum) . groupBy sumGroupable . sortSumList . map simplify . sumToList $ s
 
 -- Converts a product tree into a list (representing the flat structure of multiplications): (x*y) * ((a*b) * z) = x*y*a*b*z
 prodToList :: SymTerm -> [SymTerm]
@@ -166,10 +162,6 @@ diffSumToSumList (Difference t1 t2) = diffSumToSumList t1 ++ (map (Product (Numb
 diffSumToSumList t = [t]
 
 --
-
-prodListIntersectTuple :: [SymTerm] -> [SymTerm] -> ([SymTerm],[SymTerm],[SymTerm])
-prodListIntersectTuple a b = let is = prodListIntersect a b in
-                             (is, a \\ is, b \\ is)
 
 -- Data.List.intersect doesn't do what we need here
 prodListIntersect :: [SymTerm] -> [SymTerm] -> [SymTerm]
@@ -227,6 +219,12 @@ consolidSum (Variable v1) (Product (Number n) (Variable v2)) | v1 == v2 = Produc
 consolidSum (Product (Number n) t1) t2 | t1 == t2 = Product (Number $ n+1) t1
 consolidSum (Product (Number n1) t1) (Product (Number n2) t2) | t1 == t2 = Product (Number $ n1 + n2) t1
 consolidSum t1 t2 = Sum t1 t2
+
+comFac :: SymTerm -> SymTerm
+comFac t = let is = foldr1 intersect . map prodToList . sumToList $ t
+      in if is /= []
+         then Product (listToProd is) (listToSum . map listToProd . map (\\is) . map prodToList . sumToList $ t)
+         else t
 
 -- Comparison/sort
 sortProductList :: [SymTerm] -> [SymTerm]
