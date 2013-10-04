@@ -30,7 +30,7 @@ mathTerm :: SymParser
 mathTerm = parens
    <|> try mathFun
    <|> try mathConst
-   <|> try unit
+   <|> unit
    <|> var
    <|> num
 
@@ -55,10 +55,20 @@ mathConst = Constant Euler <$ string "eu"
         <|> Constant Pi    <$ string "pi"
 
 unit :: SymParser
-unit = char '_' *> unitTable
+unit = char '_' *> (Unit One <$> unitName)
 
-unitTable :: SymParser
-unitTable =
+unitName :: Parser Unit
+unitName =      Ampere  <$ char   'A'
+       <|>      Candela <$ string "cd"
+       <|>      Gram    <$ char   'g'
+       <|>      Joule   <$ char   'J'
+       <|>      Kelvin  <$ char   'K'
+       <|> try (Mole    <$ string "mol")
+       <|>      Meter   <$ char   'm'
+       <|>      Newton  <$ char   'N'
+       <|>      Pascal  <$ string "Pa"
+       <|>      Second  <$ char   's'
+       <|>      Watt    <$ char   'W'
 
 var :: SymParser
 var = Variable <$> letter
