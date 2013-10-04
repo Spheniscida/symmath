@@ -55,7 +55,30 @@ mathConst = Constant Euler <$ string "eu"
         <|> Constant Pi    <$ string "pi"
 
 unit :: SymParser
-unit = char '_' *> (Unit One <$> unitName)
+unit = char '_' *> unit'
+
+unit' :: SymParser
+unit' = try (Unit <$> unitPrefix <*> unitName)
+    <|>      Unit     One        <$> unitName
+
+unitPrefix :: Parser SIPrefix
+unitPrefix = Yocto <$ char 'y'
+         <|> Zepto <$ char 'z'
+	 <|> Atto  <$ char 'a'
+	 <|> Femto <$ char 'f'
+	 <|> Pico  <$ char 'p'
+	 <|> Nano  <$ char 'n'
+	 <|> Micro <$ char 'µ'
+	 <|> Micro <$ char 'u'
+	 <|> Milli <$ char 'm'
+	 <|> Kilo  <$ char 'k'
+	 <|> Mega  <$ char 'M'
+	 <|> Giga  <$ char 'G'
+	 <|> Tera  <$ char 'T'
+	 <|> Peta  <$ char 'P'
+	 <|> Exa   <$ char 'E'
+	 <|> Zetta <$ char 'Z'
+	 <|> Yotta <$ char 'Y'
 
 unitName :: Parser Unit
 unitName =      Ampere  <$ char   'A'
