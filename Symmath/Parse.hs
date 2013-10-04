@@ -15,7 +15,7 @@ parseStr :: String -> Maybe SymTerm
 parseStr = eitherToMaybe . parse expr ""
 
 expr :: SymParser
-expr = buildExpressionParser opTable term
+expr = buildExpressionParser opTable term <* eof
 
 opTable :: OperatorTable Char () SymTerm
 opTable = [[Infix (Power <$ char '^') AssocLeft]
