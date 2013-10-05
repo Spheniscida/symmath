@@ -3,7 +3,9 @@ import Test.HUnit
 import Symmath.Terms
 import Symmath.Simplify
 
-main = runTestTT tests
+main = do
+       runTestTT tests
+       return ()
 
 tests :: Test
 tests = TestList [

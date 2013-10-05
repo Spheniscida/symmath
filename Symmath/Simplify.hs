@@ -31,12 +31,7 @@ simplifyOnce a = a
 -- Special cases
 
 simplifySum :: SymTerm -> SymTerm
--- Numbers
-simplifySum (Sum (Number n1) (Number n2)) = Number $ n1 + n2
--- n1 + (-n1) = 0
-simplifySum (Sum t1 (Product (Number (-1)) t2)) | t1 == t2 = Number 0
 simplifySum s@(Sum t1 t2) = cleanSum s
-
 
 -- Products
 simplifyProd :: SymTerm -> SymTerm
@@ -127,6 +122,9 @@ simplifyLog (Log t1 t2) = Log (simplify t1) (simplify t2)
 -- Tidy up products
 cleanProduct :: SymTerm -> SymTerm
 cleanProduct p@(Product _ _) = listToProd . sortProductList . prodListToCommonExps . prodListToPowers . map simplify . prodToList $ p
+    where prodlist = if (Number 0) `elem` prodToList p
+                     then []
+                     else prodToList p
 
 cleanSum :: SymTerm -> SymTerm
 cleanSum s@(Sum _ _) = comFac . listToSum . map (foldr1 consolidSum) . groupBy sumGroupable . sortSumList . map simplify . sumToList $ s
@@ -213,14 +211,17 @@ sameExpToProd ts@((Power b e):xs) = if comfac /= []
 
 --            New term   Accumulator
 consolidSum :: SymTerm -> SymTerm -> SymTerm
-consolidSum (Number n1) (Number n2) = simplify $ Sum (Number n1) (Number n2)
-consolidSum (Variable v1) (Variable v2) | v1 == v2 = Product (Number 2) (Variable v1)
-consolidSum (Variable v1) (Product (Number n) (Variable v2)) | v1 == v2 = Product (Number $ n+1) (Variable v1)
-consolidSum (Product (Number n) t1) t2 | t1 == t2 = Product (Number $ n+1) t1
+consolidSum (Number n1) (Number n2) = Number $ n1 + n2
+consolidSum t1 t2 | t1 == t2 = Product (Number 2) t1
+consolidSum t1 (Product t2 t3) | t1 == t3 = Product (Sum t2 (Number 1)) t1
+                               | t1 == t2 = Product (Sum t3 (Number 1)) t1
+consolidSum (Product t1 t2) t3 | t2 == t3 = Product (Sum t1 (Number 1)) t3
+                               | t1 == t3 = Product (Sum t2 (Number 1)) t3
 consolidSum (Product (Number n1) t1) (Product (Number n2) t2) | t1 == t2 = Product (Number $ n1 + n2) t1
 consolidSum t1 t2 = Sum t1 t2
 
 comFac :: SymTerm -> SymTerm
+comFac (Number n) = Number n -- Avoiding foldr1 exceptions
 comFac t = let is = foldr1 intersect . map prodToList . sumToList $ t
       in if is /= []
          then Product (listToProd is) (listToSum . map listToProd . map (\\is) . map prodToList . sumToList $ t)
@@ -309,8 +310,8 @@ prodExpGroupable _ _ = False
 sumGroupable :: SymTerm -> SymTerm -> Bool
 sumGroupable (Number _) (Number _) = True
 sumGroupable (Variable a) (Variable b) = a == b
-sumGroupable (Variable a) (Product (Number n) (Variable b)) | a == b = True
-sumGroupable (Product (Number n) (Variable b)) (Variable a) | a == b = True
 sumGroupable (Product t1 t2) (Product t3 t4) = t1 == t3 || t1 == t4 || t2 == t3 || t2 == t4
+sumGroupable t1 (Product t2 t3) = t1 == t3 || t1 == t2
+sumGroupable (Product t1 t2) t3 = t1 == t3 || t2 == t3
 sumGroupable _ _ = False
 

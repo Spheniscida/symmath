@@ -7,4 +7,4 @@ fromMb :: Maybe a -> a
 fromMb (Just a) = a
 
 isIntegral :: Double -> Bool
-isIntegral x = if (x - (fromIntegral . floor $ x)) == 0 then True else False
+isIntegral x = (x - (fromIntegral . floor $ x)) == 0
