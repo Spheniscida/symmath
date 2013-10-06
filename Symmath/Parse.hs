@@ -15,7 +15,7 @@ parseStr :: String -> Maybe SymTerm
 parseStr = eitherToMaybe . parse expr ""
 
 expr :: SymParser
-expr = buildExpressionParser opTable term
+expr = buildExpressionParser opTable term <* eof
 
 opTable :: OperatorTable Char () SymTerm
 opTable = [[Infix (Power <$ char '^') AssocLeft]
@@ -41,18 +41,18 @@ mathFun :: SymParser
 mathFun = funName <*> parens
 
 funName :: Parser (SymTerm -> SymTerm)
-funName = Exp       <$ string "exp"
-      <|> Ln        <$ string "ln"
-      <|> Abs       <$ string "abs"
-      <|> Signum    <$ string "sgn"
-      <|> Trigo Sin <$ string "sin"
-      <|> Trigo Cos <$ string "cos"
-      <|> Trigo Tan <$ string "tan"
+funName =      Abs       <$ string "abs"
+      <|>      Trigo Cos <$ string "cos"
+      <|>      Exp       <$ string "exp"
+      <|>      Ln        <$ string "ln"
+      <|> try (Signum    <$ string "sgn")
+      <|>      Trigo Sin <$ string "sin"
+      <|>      Trigo Tan <$ string "tan"
 
 mathConst :: SymParser
-mathConst = Constant Euler <$ string "eu"
-        <|> Constant Phi   <$ string "phi"
-        <|> Constant Pi    <$ string "pi"
+mathConst =      Constant Euler <$ string "eu"
+        <|> try (Constant Phi   <$ string "phi")
+        <|>      Constant Pi    <$ string "pi"
 
 unit :: SymParser
 unit = char '_' *> unit'
