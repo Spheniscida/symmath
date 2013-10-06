@@ -44,8 +44,8 @@ multipleFunctions from to ival width acc terms indep = foldr1 ($$) . (header:) .
           headSepLine = foldr1 (<+>) $ replicate (length terms') (text . replicate width $ '-')
           calcLine x = map (calcFunc x) terms'
           calcFunc x term = case evalTermP term [(indep,x)] of
-                            Just y -> printfFuncValue width acc $ Value y
-                            Nothing -> printfFuncValue width acc Undefined
+                            Right y -> printfFuncValue width acc $ Value y
+                            Left _ -> printfFuncValue width acc Undefined
           terms' = (Variable indep):terms
 
 -- Util
