@@ -58,10 +58,18 @@ data Unit = -- SI base
             | Mole
             -- Derived
             | Gram
+            | Hertz
             | Newton
             | Pascal
             | Joule
             | Watt
+            | Coulomb
+            | Ohm
+            | Volt
+            | Siemens
+            | Tesla
+            | Weber
+            | Farad
              deriving (Eq,Ord,Show)
 
 
@@ -135,16 +143,25 @@ prefToExp :: SIPrefix -> Integer
 prefToExp p = toN . prefToPower $ p
     where toN (Power (Number 10) (Number e)) = round $ 10**e
 
-recipUnit u = Power u (Number (-1))
+rec u = Power u (Number (-1))
 
 meter = Unit One Meter
 kilogram = Unit One Kilogram
+gram = Unit Milli Kilogram
 kelvin = Unit One Kelvin
 newton = Unit One Newton
 candela = Unit One Candela
 second = Unit One Second
+hertz = Unit One Hertz
 ampere = Unit One Ampere
 mole = Unit One Mole
 pascal = Unit One Pascal
 joule = Unit One Joule
 watt = Unit One Watt
+coulomb = Unit One Coulomb
+ohm = Unit One Ohm
+siemens = Unit One Siemens
+weber = Unit One Weber
+volt = Unit One Volt
+tesla = Unit One Tesla
+farad = Unit One Farad
