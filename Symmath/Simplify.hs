@@ -254,6 +254,7 @@ prodTermCompare (Power b1 _) t | b1 == t = GT
 prodTermCompare t (Power b2 _) | b2 == t = LT
                                | otherwise = t `prodTermCompare` b2
 prodTermCompare (Variable _) t = LT
+prodTermCompare t (Variable _) = GT
 prodTermCompare (Abs t1) t2 = t1 `prodTermCompare` t2
 prodTermCompare t1 (Abs t2) = t1 `prodTermCompare` t2
 prodTermCompare _ _ = EQ
