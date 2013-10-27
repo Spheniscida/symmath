@@ -73,6 +73,6 @@ getTrigFun t = case t of
                 Arcsin -> asin
                 Arccos -> acos
                 Arctan -> atan
-                Arcsinh -> asinh
-                Arccosh -> acosh
-                Arctanh -> atanh
+                Arsinh -> asinh
+                Arcosh -> acosh
+                Artanh -> atanh

@@ -30,7 +30,7 @@ data Constant = Euler | Pi | Phi deriving (Eq, Show)
 data Trigo = Sin | Cos | Tan
            | Sinh | Cosh | Tanh
            | Arcsin | Arccos | Arctan
-           | Arcsinh | Arccosh | Arctanh deriving (Eq, Show)
+           | Arsinh | Arcosh | Artanh deriving (Eq, Show)
 
 data SIPrefix =   Yocto
                 | Zepto
