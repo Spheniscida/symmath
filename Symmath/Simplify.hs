@@ -1,9 +1,11 @@
 module Symmath.Simplify where
 
 import Data.List
+import Data.Maybe
 
 import Symmath.Util
 import Symmath.Terms
+import Symmath.Eval
 
 -- simplify terms with simplifyOnce until the simplified version is the same as the one from the last simplification step
 simplify :: SymTerm -> SymTerm
@@ -25,21 +27,14 @@ simplifyOnce l@(Log t1 t2) = simplifyLog l
 simplifyOnce a@(Abs _) = simplifyAbs a
 simplifyOnce s@(Signum t) = Signum $ simplifyOnce t
 simplifyOnce e@(Exp _) = simplifyExp e
+simplifyOnce u@(Unit _ _) = simplifyUnit u
 simplifyOnce u@(UndefP d t) = UndefP d $ simplifyOnce t
 simplifyOnce a = a
 
 -- Special cases
 
 simplifySum :: SymTerm -> SymTerm
--- Numbers
-simplifySum (Sum (Number n1) (Number n2)) = Number $ n1 + n2
--- n1 + (-n1) = 0
-simplifySum (Sum t1 (Product (Number (-1)) t2)) | t1 == t2 = Number 0
-simplifySum (Sum t1@(Product _ _) t2@(Product _ _)) = case prodListIntersectTuple (prodToList t1) (prodToList t2) of
-                                                        ([],rest1,rest2) -> cleanSum $ Sum (simplify t1) (simplify t2)
-                                                        (common,rest1,rest2) -> Product (listToProd common) (Sum (listToProd rest1) (listToProd rest2))
 simplifySum s@(Sum t1 t2) = cleanSum s
-
 
 -- Products
 simplifyProd :: SymTerm -> SymTerm
@@ -48,19 +43,21 @@ simplifyProd :: SymTerm -> SymTerm
 simplifyProd (Product (Number 0) _term) = Number 0
 -- x * 0 = 0
 simplifyProd (Product _term (Number 0)) = Number 0
+simplifyProd (Product (Number (-1)) (Product (Number (-1)) t)) = t
 -- a * b => c (c == a * b)
 simplifyProd (Product (Number n1) (Number n2)) = Number $ n1 * n2
-simplifyProd p@(Product t1 t2) = cleanProduct p
+simplifyProd p@(Product t1 t2) = cleanUnits . cleanProduct $ p
 
 -- Differences
 simplifyDiff :: SymTerm -> SymTerm
 -- Numbers
 simplifyDiff (Difference (Number n1) (Number n2)) = Number $ n1 - n2
-simplifyDiff (Difference t1 t2) = Sum (t1) (Product (Number (-1)) t2)
+simplifyDiff (Difference t1 t2) = Sum (t1) (listToSum . map (Product (Number (-1))) . diffSumToSumList $ t2)
 
 -- Fractions
 simplifyFrac :: SymTerm -> SymTerm
 simplifyFrac (Fraction t1 t2) | t1 == t2 = Number 1
+                              | t2 == Number 1 = t1
                               | t1 == Number 0 = Number 0
 simplifyFrac (Fraction (Number n1) (Number n2)) | isIntegral n1 && isIntegral n2 = Fraction
                                                                                     (Number (n1 / (fromInteger (gcd (round n1) (round n2)))))
@@ -123,16 +120,27 @@ simplifyLog (Log (Number n1) (Number n2)) = Number $ logBase n1 n2
 simplifyLog (Log t1 (Power t2 t3)) | t1 == t2 = t3
 simplifyLog (Log t1 t2) = Log (simplify t1) (simplify t2)
 
+simplifyUnit :: SymTerm -> SymTerm
+simplifyUnit (Unit Kilo Gram) = Unit One Kilogram
+simplifyUnit u = u
+
 ---------------------------------------------------------------------
 -- List-based simplification algorithms for sums and products. ------
 ---------------------------------------------------------------------
 -- Tidy up products
 cleanProduct :: SymTerm -> SymTerm
-cleanProduct p@(Product _ _) = listToProd . sortProductList . prodListToCommonExps . prodListToPowers . map simplify . prodToList $ p
+cleanProduct p@(Product _ _) = listToProd . map simplify . sortProductList . prodListToCommonExps . prodListToPowers . map simplify . prodToList $ p
+    where prodlist = if (Number 0) `elem` prodToList p
+                     then []
+                     else prodToList p
 
 cleanSum :: SymTerm -> SymTerm
-cleanSum s@(Sum _ _) = listToSum . map (foldr1 consolidSum) . groupBy sumGroupable . sortSumList . map simplify . sumToList $ s
+cleanSum s@(Sum _ _) = comFac . listToSum . map (foldr1 consolidSum) . groupBy sumGroupable . sortSumList . map simplify . sumToList $ s
 
+cleanUnits :: SymTerm -> SymTerm
+cleanUnits u | containsUnits . prodToList $ u = listToProd . concatMap simplifyUnits . groupBy unitGroupable . sortBy unitProdCompare .
+    concatMap derivedToBase . concatMap prodToList . map expandPrefix . concatMap expandPower . prodToList $ u
+             | otherwise = u
 
 -- Converts a product tree into a list (representing the flat structure of multiplications): (x*y) * ((a*b) * z) = x*y*a*b*z
 prodToList :: SymTerm -> [SymTerm]
@@ -159,11 +167,12 @@ listToSum [t] = t
 listToSum ((Number 0):ts) = listToSum ts
 listToSum (t:ts) = Sum t (listToSum ts)
 
---
+diffSumToSumList :: SymTerm -> [SymTerm]
+diffSumToSumList (Sum t1 t2) = diffSumToSumList t1 ++ diffSumToSumList t2
+diffSumToSumList (Difference t1 t2) = diffSumToSumList t1 ++ (map (Product (Number (-1))) $ diffSumToSumList t2)
+diffSumToSumList t = [t]
 
-prodListIntersectTuple :: [SymTerm] -> [SymTerm] -> ([SymTerm],[SymTerm],[SymTerm])
-prodListIntersectTuple a b = let is = prodListIntersect a b in
-                             (is, a \\ is, b \\ is)
+--
 
 -- Data.List.intersect doesn't do what we need here
 prodListIntersect :: [SymTerm] -> [SymTerm] -> [SymTerm]
@@ -215,12 +224,76 @@ sameExpToProd ts@((Power b e):xs) = if comfac /= []
 
 --            New term   Accumulator
 consolidSum :: SymTerm -> SymTerm -> SymTerm
-consolidSum (Number n1) (Number n2) = simplify $ Sum (Number n1) (Number n2)
-consolidSum (Variable v1) (Variable v2) | v1 == v2 = Product (Number 2) (Variable v1)
-consolidSum (Variable v1) (Product (Number n) (Variable v2)) | v1 == v2 = Product (Number $ n+1) (Variable v1)
-consolidSum (Product (Number n) (Variable v2)) (Variable v1)  | v1 == v2 = Product (Number $ n+1) (Variable v1)
+consolidSum (Number n1) (Number n2) = Number $ n1 + n2
+consolidSum t1 t2 | t1 == t2 = Product (Number 2) t1
+consolidSum t1 (Product t2 t3) | t1 == t3 = Product (Sum t2 (Number 1)) t1
+                               | t1 == t2 = Product (Sum t3 (Number 1)) t1
+consolidSum (Product t1 t2) t3 | t2 == t3 = Product (Sum t1 (Number 1)) t3
+                               | t1 == t3 = Product (Sum t2 (Number 1)) t3
 consolidSum (Product (Number n1) t1) (Product (Number n2) t2) | t1 == t2 = Product (Number $ n1 + n2) t1
 consolidSum t1 t2 = Sum t1 t2
+
+-- Units
+-- EXTEND HERE!
+derivedToBase :: SymTerm -> [SymTerm]
+derivedToBase (Unit One Newton) = [kilogram, meter, rec second, rec second]
+derivedToBase (Unit One Pascal) = [kilogram, rec second, rec second, rec meter]
+derivedToBase (Unit One Joule) = [kilogram, meter, meter, rec second, rec second]
+derivedToBase (Unit One Watt) = [kilogram, meter, meter, rec second, rec second, rec second]
+derivedToBase (Unit One Hertz) = [rec second]
+derivedToBase (Unit One Ohm) = [kilogram, meter, meter, rec ampere, rec ampere, rec second, rec second, rec second]
+derivedToBase (Unit One Siemens) = [rec kilogram, rec meter, rec meter, ampere, ampere, second, second]
+derivedToBase (Unit One Coulomb) = [ampere, second]
+derivedToBase (Unit One Volt) = [kilogram, meter, meter, rec ampere, rec second, rec second, rec second]
+derivedToBase (Unit One Tesla) = [kilogram, rec ampere, rec second, rec second]
+derivedToBase (Unit One Weber) = [meter, meter, kilogram, rec ampere, rec second, rec second]
+derivedToBase (Unit One Farad) = [ampere, ampere, second, second, second, second, rec kilogram, rec meter, rec meter]
+derivedToBase u = [u]
+
+simplifyUnits :: [SymTerm] -> [SymTerm]
+simplifyUnits m
+                | (derivedToBase ohm) `elems` m = ohm : simplifyUnits (m \\ (derivedToBase ohm))
+                | (derivedToBase volt) `elems` m = volt : simplifyUnits (m \\ (derivedToBase volt))
+                | (derivedToBase farad) `elems` m = farad : simplifyUnits (m \\ (derivedToBase farad))
+                | (derivedToBase siemens) `elems` m = siemens : simplifyUnits (m \\ (derivedToBase siemens))
+                | (derivedToBase weber) `elems` m = weber : simplifyUnits (m \\ (derivedToBase weber))
+                | (derivedToBase tesla) `elems` m = tesla : simplifyUnits (m \\ (derivedToBase tesla))
+                | (derivedToBase watt) `elems` m = watt : simplifyUnits (m \\ (derivedToBase watt))
+                | (derivedToBase joule) `elems` m = joule : simplifyUnits (m \\ (derivedToBase joule))
+                | (derivedToBase pascal) `elems` m = pascal : simplifyUnits (m \\ (derivedToBase pascal))
+                | (derivedToBase newton) `elems` m = newton : simplifyUnits (m \\ (derivedToBase newton))
+                | (derivedToBase coulomb) `elems` m = coulomb : simplifyUnits (m \\ (derivedToBase coulomb))
+                | (derivedToBase hertz) `elems` m = hertz : simplifyUnits (m \\ (derivedToBase hertz))
+                | otherwise = m
+
+expandPower :: SymTerm -> [SymTerm]
+expandPower p@(Power t (Number n)) | isIntegral n && n > 0 = replicate (round n) t
+                                   | isIntegral n && n < 0 = replicate (abs . round $ n) (Power t (Number (-1)))
+                                   | otherwise = [p]
+expandPower x = [x]
+
+expandPrefix :: SymTerm -> SymTerm
+expandPrefix (Unit p u) | p /= One = Product (prefToPower p) (Unit One u)
+expandPrefix t = t
+
+-- Not currently used!
+makePrefix :: [SymTerm] -> [SymTerm]
+makePrefix l = restList ++ [Number . fromeither $ Fraction numProd r,addPref unit decPrefix]
+    where numProd = simplify . foldr1 (*) . ((Number 1):) . filter isNumber $ l
+          restList = filter (not . isNumber) l \\ [unit]
+          decExp = let (Number n) = numProd in floor . logBase 10 $ n
+          decPrefix = expToPrefix decExp
+          unit = fromJust . find (\x -> containsUnits [x]) $ l
+          addPref (Unit p u) p2 = let (Power (Number 10) (Number e1)) = prefToPower p; (Power (Number 10) (Number e2)) = prefToPower p2 in Unit (expToPrefix . round $ e1+e2) u
+          r = Number $ fromInteger (prefToExp decPrefix)
+          fromeither = \x -> let (Right n) = evalTerm x in n
+
+comFac :: SymTerm -> SymTerm
+comFac (Number n) = Number n -- Avoiding foldr1 exceptions
+comFac t = let is = foldr1 intersect . map prodToList . sumToList $ t
+      in if is /= []
+         then Product (listToProd is) (listToSum . map listToProd . map (\\is) . map prodToList . sumToList $ t)
+         else t
 
 -- Comparison/sort
 sortProductList :: [SymTerm] -> [SymTerm]
@@ -249,6 +322,7 @@ prodTermCompare (Power b1 _) t | b1 == t = GT
 prodTermCompare t (Power b2 _) | b2 == t = LT
                                | otherwise = t `prodTermCompare` b2
 prodTermCompare (Variable _) t = LT
+prodTermCompare t (Variable _) = GT
 prodTermCompare (Abs t1) t2 = t1 `prodTermCompare` t2
 prodTermCompare t1 (Abs t2) = t1 `prodTermCompare` t2
 prodTermCompare _ _ = EQ
@@ -285,6 +359,15 @@ sumTermCompare t (Number _) = GT
 sumTermCompare t (Variable _) = GT
 sumTermCompare t1 t2 = EQ
 
+-- Push units to the end
+unitProdCompare :: SymTerm -> SymTerm -> Ordering
+unitProdCompare (Unit _ a) (Unit _ b) = compare a b
+unitProdCompare (Power t1 e) t2 = t1 `unitProdCompare` t2
+unitProdCompare t1 (Power t2 e) = t1 `unitProdCompare` t2
+unitProdCompare (Unit _ _) t = GT
+unitProdCompare t (Unit _ _) = LT
+unitProdCompare t1 t2 = EQ
+
 -- Grouping predicates
 --
 
@@ -305,8 +388,26 @@ prodExpGroupable _ _ = False
 sumGroupable :: SymTerm -> SymTerm -> Bool
 sumGroupable (Number _) (Number _) = True
 sumGroupable (Variable a) (Variable b) = a == b
-sumGroupable (Variable a) (Product (Number n) (Variable b)) | a == b = True
-sumGroupable (Product (Number n) (Variable b)) (Variable a) | a == b = True
 sumGroupable (Product t1 t2) (Product t3 t4) = t1 == t3 || t1 == t4 || t2 == t3 || t2 == t4
+sumGroupable t1 (Product t2 t3) = t1 == t3 || t1 == t2
+sumGroupable (Product t1 t2) t3 = t1 == t3 || t2 == t3
 sumGroupable _ _ = False
 
+unitGroupable :: SymTerm -> SymTerm -> Bool
+unitGroupable (Unit _ _) (Unit _ _) = True
+unitGroupable (Power (Unit _ _) _) (Unit _ _) = True
+unitGroupable (Unit _ _) (Power (Unit _ _) _) = True
+unitGroupable (Power (Unit _ _) _) (Power (Unit _ _) _) = True
+unitGroupable _ _ = False
+
+-- Helpers
+
+containsUnits :: [SymTerm] -> Bool
+containsUnits ((Unit _ _):xs) = True
+containsUnits ((Power (Unit _ _) _):xs) = True
+containsUnits (x:xs) = containsUnits xs
+containsUnits [] = False
+
+isNumber :: SymTerm -> Bool
+isNumber (Number _) = True
+isNumber _ = False

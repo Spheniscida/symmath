@@ -1,15 +1,11 @@
 module Symmath.Functiontable where
 
-import Data.Maybe
-import Control.Monad
-import Data.List
 import Text.Printf
 
 import Text.PrettyPrint
 
 import Symmath.Terms
 import Symmath.Eval
-import Symmath.Util
 
 data FuncValue = Value Double | Undefined
 
@@ -19,6 +15,13 @@ instance Show FuncValue where
 
 -- Use show on the returned Docs to format (render) them.
 
+---- Simple number lists.
+
+functionEval :: Double -> Double -> SymTerm -> Char -> [FuncValue]
+functionEval from ival term indep = map evalForX [from,from+ival..]
+    where evalForX x = case evalTermP term [(indep,x)] of
+                            Left _ -> Undefined
+                            Right y -> Value y
 
 ------------ Functions using defaults --------------------
 -- Uses default values for field width, accuracy and the independent variable
@@ -38,14 +41,14 @@ functionTable :: Double -> Double -> Double -> Int -> Int -> SymTerm -> Char -> 
 functionTable from to ival width acc term indep = multipleFunctions from to ival width acc [term] indep
 
 multipleFunctions :: Double -> Double -> Double -> Int -> Int -> [SymTerm] -> Char -> Doc
-multipleFunctions from to ival width acc terms indep = foldr1 ($$) . (header:) . map (foldr1 (<+>) . calcLine) $ [from,ival..to]
+multipleFunctions from to ival width acc terms indep = foldr1 ($$) . (header:) . map (foldr1 (<+>) . calcLine) $ [from,(from+ival)..to]
     where header = colHeads $$ headSepLine
           colHeads = foldr1 (<+>) . map (text . printf ('%':show width++"s") . show) $ terms'
           headSepLine = foldr1 (<+>) $ replicate (length terms') (text . replicate width $ '-')
           calcLine x = map (calcFunc x) terms'
           calcFunc x term = case evalTermP term [(indep,x)] of
-                            Just y -> printfFuncValue width acc $ Value y
-                            Nothing -> printfFuncValue width acc Undefined
+                                Right y -> printfFuncValue width acc $ Value y
+                                Left _ -> printfFuncValue width acc Undefined
           terms' = (Variable indep):terms
 
 -- Util

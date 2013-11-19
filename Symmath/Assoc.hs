@@ -10,5 +10,4 @@ bindVar :: VarBind -> Char -> Double -> VarBind
 bindVar l c d = (c,d):l
 
 lookupVar :: VarBind -> Char -> Maybe Double
-lookupVar [] _c = Nothing
-lookupVar (v:vs) c = if c == fst v then Just $ snd v else lookupVar vs c
+lookupVar l v = foldr (\(var,val) a -> if var == v then Just val else a) Nothing l
