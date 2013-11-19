@@ -8,7 +8,6 @@ deriv :: Var -> SymTerm -> SymTerm
 
 deriv _ (Number   _) = Number 0
 deriv _ (Constant _) = Number 0
-deriv _ (Unit _ _)   = Number 0
 
 deriv x (Variable y) | x == y = Number 1
                      | x /= y = Number 0
