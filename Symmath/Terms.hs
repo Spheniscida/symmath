@@ -27,7 +27,10 @@ type Var = Char
 
 data Constant = Euler | Pi | Phi deriving (Eq, Show)
 
-data Trigo = Sin | Cos | Tan deriving (Eq, Show)
+data Trigo = Sin | Cos | Tan
+           | Sinh | Cosh | Tanh
+           | Arcsin | Arccos | Arctan
+           | Arsinh | Arcosh | Artanh deriving (Eq, Show)
 
 data SIPrefix =   Yocto
                 | Zepto
@@ -135,6 +138,7 @@ prefToExp :: SIPrefix -> Integer
 prefToExp p = toN . prefToPower $ p
     where toN (Power (Number 10) (Number e)) = round $ 10**e
 
+recipUnit :: SymTerm -> SymTerm
 recipUnit u = Power u (Number (-1))
 
 meter = Unit One Meter

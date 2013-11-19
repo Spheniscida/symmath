@@ -67,3 +67,12 @@ getTrigFun t = case t of
                 Sin -> sin
                 Cos -> cos
                 Tan -> tan
+                Sinh -> sinh
+                Cosh -> cosh
+                Tanh -> tanh
+                Arcsin -> asin
+                Arccos -> acos
+                Arctan -> atan
+                Arsinh -> asinh
+                Arcosh -> acosh
+                Artanh -> atanh
