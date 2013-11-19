@@ -129,7 +129,7 @@ simplifyUnit u = u
 ---------------------------------------------------------------------
 -- Tidy up products
 cleanProduct :: SymTerm -> SymTerm
-cleanProduct p@(Product _ _) = listToProd . sortProductList . prodListToCommonExps . prodListToPowers . map simplify . prodToList $ p
+cleanProduct p@(Product _ _) = listToProd . map simplify . sortProductList . prodListToCommonExps . prodListToPowers . map simplify . prodToList $ p
     where prodlist = if (Number 0) `elem` prodToList p
                      then []
                      else prodToList p
@@ -138,8 +138,8 @@ cleanSum :: SymTerm -> SymTerm
 cleanSum s@(Sum _ _) = comFac . listToSum . map (foldr1 consolidSum) . groupBy sumGroupable . sortSumList . map simplify . sumToList $ s
 
 cleanUnits :: SymTerm -> SymTerm
-cleanUnits u | containsUnits . prodToList $ u = listToProd . concat . map simplifyUnits . groupBy unitGroupable . sortBy unitProdCompare .
-    concat . map derivedToBase . concat . map prodToList . map expandPrefix . concat . map expandPower . prodToList $ u
+cleanUnits u | containsUnits . prodToList $ u = listToProd . concatMap simplifyUnits . groupBy unitGroupable . sortBy unitProdCompare .
+    concatMap derivedToBase . concatMap prodToList . map expandPrefix . concatMap expandPower . prodToList $ u
              | otherwise = u
 
 -- Converts a product tree into a list (representing the flat structure of multiplications): (x*y) * ((a*b) * z) = x*y*a*b*z
@@ -236,18 +236,34 @@ consolidSum t1 t2 = Sum t1 t2
 -- Units
 -- EXTEND HERE!
 derivedToBase :: SymTerm -> [SymTerm]
-derivedToBase (Unit One Newton) = [kilogram, meter, recipUnit second, recipUnit second]
-derivedToBase (Unit One Pascal) = [kilogram, recipUnit second, recipUnit second, recipUnit meter]
-derivedToBase (Unit One Joule) = [kilogram, meter, meter, recipUnit second, recipUnit second]
-derivedToBase (Unit One Watt) = [kilogram, meter, meter, recipUnit second, recipUnit second, recipUnit second]
+derivedToBase (Unit One Newton) = [kilogram, meter, rec second, rec second]
+derivedToBase (Unit One Pascal) = [kilogram, rec second, rec second, rec meter]
+derivedToBase (Unit One Joule) = [kilogram, meter, meter, rec second, rec second]
+derivedToBase (Unit One Watt) = [kilogram, meter, meter, rec second, rec second, rec second]
+derivedToBase (Unit One Hertz) = [rec second]
+derivedToBase (Unit One Ohm) = [kilogram, meter, meter, rec ampere, rec ampere, rec second, rec second, rec second]
+derivedToBase (Unit One Siemens) = [rec kilogram, rec meter, rec meter, ampere, ampere, second, second]
+derivedToBase (Unit One Coulomb) = [ampere, second]
+derivedToBase (Unit One Volt) = [kilogram, meter, meter, rec ampere, rec second, rec second, rec second]
+derivedToBase (Unit One Tesla) = [kilogram, rec ampere, rec second, rec second]
+derivedToBase (Unit One Weber) = [meter, meter, kilogram, rec ampere, rec second, rec second]
+derivedToBase (Unit One Farad) = [ampere, ampere, second, second, second, second, rec kilogram, rec meter, rec meter]
 derivedToBase u = [u]
 
 simplifyUnits :: [SymTerm] -> [SymTerm]
 simplifyUnits m
+                | (derivedToBase ohm) `elems` m = ohm : simplifyUnits (m \\ (derivedToBase ohm))
+                | (derivedToBase volt) `elems` m = volt : simplifyUnits (m \\ (derivedToBase volt))
+                | (derivedToBase farad) `elems` m = farad : simplifyUnits (m \\ (derivedToBase farad))
+                | (derivedToBase siemens) `elems` m = siemens : simplifyUnits (m \\ (derivedToBase siemens))
+                | (derivedToBase weber) `elems` m = weber : simplifyUnits (m \\ (derivedToBase weber))
+                | (derivedToBase tesla) `elems` m = tesla : simplifyUnits (m \\ (derivedToBase tesla))
                 | (derivedToBase watt) `elems` m = watt : simplifyUnits (m \\ (derivedToBase watt))
                 | (derivedToBase joule) `elems` m = joule : simplifyUnits (m \\ (derivedToBase joule))
                 | (derivedToBase pascal) `elems` m = pascal : simplifyUnits (m \\ (derivedToBase pascal))
                 | (derivedToBase newton) `elems` m = newton : simplifyUnits (m \\ (derivedToBase newton))
+                | (derivedToBase coulomb) `elems` m = coulomb : simplifyUnits (m \\ (derivedToBase coulomb))
+                | (derivedToBase hertz) `elems` m = hertz : simplifyUnits (m \\ (derivedToBase hertz))
                 | otherwise = m
 
 expandPower :: SymTerm -> [SymTerm]
