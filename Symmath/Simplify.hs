@@ -112,10 +112,12 @@ simplifyExp (Exp t) = Exp $ simplify t
 simplifyLn :: SymTerm -> SymTerm
 simplifyLn (Ln (Number n)) = Number $ log n
 simplifyLn (Ln (Exp t)) = t
+simplifyLn (Ln (Constant Euler)) = Number 1
 simplifyLn (Ln t) = Ln (simplify t)
 
 simplifyLog :: SymTerm -> SymTerm
 simplifyLog (Log (Number n1) (Number n2)) = Number $ logBase n1 n2
+simplifyLog (Log b e) | b == e = Number 1
 simplifyLog (Log t1 (Power t2 t3)) | t1 == t2 = t3
 simplifyLog (Log t1 t2) = Log (simplify t1) (simplify t2)
 
