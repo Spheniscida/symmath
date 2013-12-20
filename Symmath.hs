@@ -9,6 +9,7 @@ module Symmath
     module Symmath.Simplify,
     module Symmath.Util,
     module Symmath.Parse,
+    module Symmath.UPNParse,
 )
  where
 
@@ -21,3 +22,4 @@ import Symmath.Derivate
 import Symmath.Simplify
 import Symmath.Util
 import Symmath.Parse
+import Symmath.UPNParse
