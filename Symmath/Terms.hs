@@ -44,7 +44,7 @@ instance Show SymTerm where
     show (Sum term1 term2) = '(' : (show term1) ++ " + " ++ (show term2) ++ ")"
     show (Fraction term1 term2) = '(' : (show term1) ++ " / " ++ (show term2) ++ ")"
     show (Power term1 term2) = '(' : (show term1) ++ ")^(" ++ (show term2) ++ ")"
-    show (Exp term1) = "exp(" ++ show term1 ++ ")"
+    show (Exp term1) = "e^(" ++ show term1 ++ ")"
     show (Trigo trigo term1) = (map toLower $ show trigo) ++ "(" ++ show term1 ++ ")"
     show (Ln term1) = "ln(" ++ show term1 ++ ")"
     show (Log base term) = "log(" ++ show base ++ "," ++ show term ++ ")"
