@@ -52,6 +52,11 @@ parseName s@(c:c':cs) | "eu" `isPrefixOf` s = StateT $ \ts -> return (drop 2 s,(
                       | "pi" `isPrefixOf` s = StateT $ \ts -> return (drop 2 s,(Constant Pi):ts)
                       | "phi"`isPrefixOf` s = StateT $ \ts -> return (drop 3 s,(Constant Phi):ts)
                       | "abs"`isPrefixOf` s = StateT $ \(t:ts) -> return (drop 3 s,(Abs t):ts)
+                      | "sgn"`isPrefixOf` s = StateT $ \(t:ts) -> return (drop 3 s,(Signum t):ts)
+                      | "log"`isPrefixOf` s = StateT $ \ts -> if length ts < 2
+                                                              then throwError $ "Stack error: Not enough items on stack for binary Log at ...\"" ++ take 10 s ++ "\""
+                                                              else let (a:b:ts') = ts in return (drop 3 s,(Log b a):ts')
+                      | "ln" `isPrefixOf` s = StateT $ \(t:ts) -> return (drop 2 s,(Ln t):ts)
                       | getTrigoFunc s /= "" = StateT $ \(t:ts) -> let tcode = getTrigoFunc s in
                                                                    case parseTrigoFunc tcode of
                                                                         Just f -> return (drop (length tcode) s,(f t):ts)
