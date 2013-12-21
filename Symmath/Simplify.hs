@@ -27,6 +27,7 @@ simplifyOnce l@(Log t1 t2) = simplifyLog l
 simplifyOnce a@(Abs _) = simplifyAbs a
 simplifyOnce s@(Signum t) = Signum $ simplifyOnce t
 simplifyOnce e@(Exp _) = simplifyExp e
+simplifyOnce r@(Root _ _) = simplifyRoot r
 simplifyOnce u@(UndefP d t) = UndefP d $ simplifyOnce t
 simplifyOnce a = a
 
@@ -120,6 +121,9 @@ simplifyLog (Log (Number n1) (Number n2)) = Number $ logBase n1 n2
 simplifyLog (Log b e) | b == e = Number 1
 simplifyLog (Log t1 (Power t2 t3)) | t1 == t2 = t3
 simplifyLog (Log t1 t2) = Log (simplify t1) (simplify t2)
+
+simplifyRoot :: SymTerm -> SymTerm
+simplifyRoot (Root t1 t2) = Power t1 (rec t2)
 
 ---------------------------------------------------------------------
 -- List-based simplification algorithms for sums and products. ------

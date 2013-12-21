@@ -54,9 +54,13 @@ parseName s@(c:c':cs) | "eu" `isPrefixOf` s = StateT $ \ts -> return (drop 2 s,(
                       | "abs"`isPrefixOf` s = StateT $ \(t:ts) -> return (drop 3 s,(Abs t):ts)
                       | "sgn"`isPrefixOf` s = StateT $ \(t:ts) -> return (drop 3 s,(Signum t):ts)
                       | "log"`isPrefixOf` s = StateT $ \ts -> if length ts < 2
-                                                              then throwError $ "Stack error: Not enough items on stack for binary Log at ...\"" ++ take 10 s ++ "\""
+                                                              then throwError $ "Stack error: Not enough items on stack for binary Log at ..." ++ take 10 s
                                                               else let (a:b:ts') = ts in return (drop 3 s,(Log b a):ts')
                       | "ln" `isPrefixOf` s = StateT $ \(t:ts) -> return (drop 2 s,(Ln t):ts)
+                      | "sqrt"`isPrefixOf`s = StateT $ \(t:ts) -> return (drop 4 s,(Root t (Number 2)):ts)
+                      | "rt" `isPrefixOf` s = StateT $ \ts -> if length ts < 2
+                                                              then throwError $ "Stack error: Not enough items on stack for binary root at ..." ++ take 10 s
+                                                              else let (a:b:ts') = ts in return (drop 2 s,(Root b a):ts')
                       | getTrigoFunc s /= "" = StateT $ \(t:ts) -> let tcode = getTrigoFunc s in
                                                                    case parseTrigoFunc tcode of
                                                                         Just f -> return (drop (length tcode) s,(f t):ts)
@@ -89,4 +93,4 @@ parseUPN s@(c:cs)   | isSpace c = parseUPN cs
 upnToTerm :: ParseInput -> Either ParseError SymTerm
 upnToTerm i = case runIdentity (runErrorT (runStateT (parseUPN (i ++ " ")) [])) of
                 Left e -> Left e
-                Right (r,ts) -> Right $ last ts
+                Right (r,ts) -> Right $ head ts
