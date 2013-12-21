@@ -19,6 +19,7 @@ data SymTerm = Number Double
              | Log SymTerm SymTerm
              | Abs SymTerm
              | Signum SymTerm
+             | Root SymTerm SymTerm
              | UndefP Double SymTerm
             deriving Eq
 
@@ -50,6 +51,7 @@ instance Show SymTerm where
     show (Log base term) = "log(" ++ show base ++ "," ++ show term ++ ")"
     show (Abs term) = '|' : show term ++ "|"
     show (Signum term) = "sgn(" ++ show term ++ ")"
+    show (Root t1 t2) = "root(" ++ show t1 ++ "," ++ show t2 ++ ")"
     show (UndefP p t) = "undefAt(" ++ show p ++ "," ++ show t ++ ")"
 
 instance Num SymTerm where
