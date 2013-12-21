@@ -21,7 +21,7 @@ data SymTerm = Number Double
              | Signum SymTerm
              | Root SymTerm SymTerm
              | UndefP Double SymTerm
-            deriving Eq
+            deriving (Eq,Show)
 
 type Var = Char
 
@@ -34,25 +34,25 @@ data Trigo = Sin | Cos | Tan
 
 -- Instances
 
-instance Show SymTerm where
-    show (Number n) = show n
-    show (Variable v) = [v]
-    show (Constant c) = show c
-    show (Product (Number (-1)) term2) = "(-" ++ (show term2) ++ ")"
-    show (Product term1 term2) = (show term1) ++ " * " ++ (show term2)
-    show (Difference term1 term2) = '(' : (show term1) ++ " - " ++ (show term2) ++ ")"
-    show (Sum term1 (Product (Number (-1)) term2)) = '(' : (show term1) ++ " - " ++ (show term2) ++ ")"
-    show (Sum term1 term2) = '(' : (show term1) ++ " + " ++ (show term2) ++ ")"
-    show (Fraction term1 term2) = '(' : (show term1) ++ " / " ++ (show term2) ++ ")"
-    show (Power term1 term2) = '(' : (show term1) ++ ")^(" ++ (show term2) ++ ")"
-    show (Exp term1) = "e^(" ++ show term1 ++ ")"
-    show (Trigo trigo term1) = (map toLower $ show trigo) ++ "(" ++ show term1 ++ ")"
-    show (Ln term1) = "ln(" ++ show term1 ++ ")"
-    show (Log base term) = "log(" ++ show base ++ "," ++ show term ++ ")"
-    show (Abs term) = '|' : show term ++ "|"
-    show (Signum term) = "sgn(" ++ show term ++ ")"
-    show (Root t1 t2) = "root(" ++ show t1 ++ "," ++ show t2 ++ ")"
-    show (UndefP p t) = "undefAt(" ++ show p ++ "," ++ show t ++ ")"
+showTerm :: SymTerm -> String
+showTerm (Number n) = show n
+showTerm (Variable v) = [v]
+showTerm (Constant c) = show c
+showTerm (Product (Number (-1)) term2) = "(-" ++ (showTerm term2) ++ ")"
+showTerm (Product term1 term2) = (showTerm term1) ++ " * " ++ (showTerm term2)
+showTerm (Difference term1 term2) = '(' : (showTerm term1) ++ " - " ++ (showTerm term2) ++ ")"
+showTerm (Sum term1 (Product (Number (-1)) term2)) = '(' : (showTerm term1) ++ " - " ++ (showTerm term2) ++ ")"
+showTerm (Sum term1 term2) = '(' : (showTerm term1) ++ " + " ++ (showTerm term2) ++ ")"
+showTerm (Fraction term1 term2) = '(' : (showTerm term1) ++ " / " ++ (showTerm term2) ++ ")"
+showTerm (Power term1 term2) = '(' : (showTerm term1) ++ ")^(" ++ (showTerm term2) ++ ")"
+showTerm (Exp term1) = "e^(" ++ showTerm term1 ++ ")"
+showTerm (Trigo trigo term1) = (map toLower $ show trigo) ++ "(" ++ showTerm term1 ++ ")"
+showTerm (Ln term1) = "ln(" ++ showTerm term1 ++ ")"
+showTerm (Log base term) = "log(" ++ showTerm base ++ "," ++ showTerm term ++ ")"
+showTerm (Abs term) = '|' : showTerm term ++ "|"
+showTerm (Signum term) = "sgn(" ++ showTerm term ++ ")"
+showTerm (Root t1 t2) = "root(" ++ showTerm t1 ++ "," ++ showTerm t2 ++ ")"
+showTerm (UndefP p t) = "undefAt(" ++ show p ++ "," ++ showTerm t ++ ")"
 
 instance Num SymTerm where
     (+) = Sum
