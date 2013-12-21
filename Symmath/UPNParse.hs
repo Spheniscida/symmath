@@ -93,4 +93,6 @@ parseUPN s@(c:cs)   | isSpace c = parseUPN cs
 upnToTerm :: ParseInput -> Either ParseError SymTerm
 upnToTerm i = case runIdentity (runErrorT (runStateT (parseUPN (i ++ " ")) [])) of
                 Left e -> Left e
-                Right (r,ts) -> Right $ head ts
+                Right (r,ts) -> if ts == []
+                                then Left "No term could be parsed."
+                                else Right $ head ts
