@@ -44,6 +44,8 @@ evalP (Signum t) = rEvalUnary signum t
 evalP (Abs t) = evalP t >>= \et -> if et < 0
                                    then return $ (-1) * et
                                    else return et
+evalP (Root b e) = evalP (Power b (rec e))
+evalP t = throwError $ "Could not evaluate partial term: " ++ show t ++ "; this is probably a bug."
 
 rEvalUnary :: (Double -> Double) -> SymTerm -> EvalT
 rEvalUnary f t = do
