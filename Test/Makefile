@@ -1,12 +1,12 @@
 .SUFFIXES: .hs .hi .o .x
 
-TESTS=simplify
+TESTS=Symmath
 
 .hs.x:
 	ghc -i.. -o $@ $<
 
-simplify : TestSimplify.x
-	./TestSimplify.x
+Symmath : TestSymmath.x
+	./TestSymmath.x
 
 clean:
 	rm -f *.hi *.o *.x \
