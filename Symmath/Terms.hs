@@ -53,6 +53,7 @@ showTerm (Abs term) = '|' : showTerm term ++ "|"
 showTerm (Signum term) = "sgn(" ++ showTerm term ++ ")"
 showTerm (Root t1 t2) = "root(" ++ showTerm t1 ++ "," ++ showTerm t2 ++ ")"
 showTerm (UndefP p t) = "undefAt(" ++ show p ++ "," ++ showTerm t ++ ")"
+showTerm t = show t
 
 instance Num SymTerm where
     (+) = Sum
