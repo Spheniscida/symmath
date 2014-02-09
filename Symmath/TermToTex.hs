@@ -35,8 +35,8 @@ toLaTeX (Product t1 t2) = do
                             t2' <- toLaTeX t2
                             conf <- ask
                             if multdots conf
-                            then return $ t1' <+> (T.pack " \\cdot ") <+> t2'
-                            else return $ t1' <+> space <+> t2'
+                             then return $ t1' <+> (T.pack " \\cdot ") <+> t2'
+                             else return $ t1' <+> space <+> t2'
 toLaTeX (Sum t1 t2) = do
                         t1' <- toLaTeX t1
                         t2' <- toLaTeX t2
@@ -46,10 +46,10 @@ toLaTeX (Fraction t1 t2) = do
                         t2' <- toLaTeX t2
                         conf <- ask
                         if fracs conf
-                        then return $ (T.pack "\\frac{") <+> t1' <+> (T.pack "}{") <+> t2' <+> (T.pack "} ")
-                        else if multdots conf
-                             then return $ t1' <+> (T.pack " \\cdot ") <+> t2' <+> (T.pack "^{-1} ")
-                             else return $ t1' <+> (T.pack " ") <+> t2' <+> (T.pack "^{-1} ")
+                         then return $ (T.pack "\\frac{") <+> t1' <+> (T.pack "}{") <+> t2' <+> (T.pack "} ")
+                         else if multdots conf
+                               then return $ t1' <+> (T.pack " \\cdot ") <+> t2' <+> (T.pack "^{-1} ")
+                               else return $ t1' <+> (T.pack " ") <+> t2' <+> (T.pack "^{-1} ")
 toLaTeX (Difference t1 t2) = do
                         t1' <- toLaTeX t1
                         t2' <- toLaTeX t2
