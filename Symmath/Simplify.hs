@@ -123,7 +123,7 @@ simplifyLog (Log t1 (Power t2 t3)) | t1 == t2 = t3
 simplifyLog (Log t1 t2) = Log (simplify t1) (simplify t2)
 
 simplifyRoot :: SymTerm -> SymTerm
-simplifyRoot (Root t1 t2) = Power t1 (rec t2)
+simplifyRoot (Root t1 t2) = Power t2 (rec t1)
 
 ---------------------------------------------------------------------
 -- List-based simplification algorithms for sums and products. ------
