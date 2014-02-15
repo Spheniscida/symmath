@@ -87,6 +87,7 @@ twoArgExpr = do
         "-" -> return Difference
         "*" -> return Product
         "/" -> return Fraction
+        "^" -> return Power
         _ -> unexpected "no feasible 2arg function found"
 
 twoArgOpsP :: [Parser String]
