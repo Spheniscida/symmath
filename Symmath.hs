@@ -9,7 +9,7 @@ module Symmath
     module Symmath.Simplify,
     module Symmath.Util,
     module Symmath.Parse,
-    module Symmath.UPNParse,
+    module Symmath.RPNParse,
     module Symmath.TermToTex,
 )
  where
@@ -23,5 +23,5 @@ import Symmath.Derivate
 import Symmath.Simplify
 import Symmath.Util
 import Symmath.Parse
-import Symmath.UPNParse
+import Symmath.RPNParse
 import Symmath.TermToTex

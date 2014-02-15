@@ -1,4 +1,25 @@
-module Symmath.UPNParse where
+module Symmath.RPNParse where
+
+{-
+    - RPN parser documentation
+
+This is a standard RPN parser for SymMath terms. RPN stands for "Reverse Polish Notation" and
+means that a term is not written as "(x + 4) * 3" but rather as "x 4 + 3 *". Imagine a stack behind
+it:
+
+x: Push x
+4: Push 4
++: Pop x, 4; Push (x+4)
+3: Push 3
+*: Pop 3, (x+4); Push (3 * (x+4))
+
+Available commands/expressions are:
+
+    + * - / :: Standard arithmetic operators
+    -- :: Unary minus (algebraic sign)
+    rt :: Binary root operator: the nth root of x is written as "n x rt"
+
+-}
 
 import Symmath.Terms
 import Symmath.Assoc as Assoc
@@ -58,6 +79,7 @@ oneArgExpr = do
        <|> try (string "sgn")
        <|> try (string "exp")
        <|> try (string "abs")
+       <|> try (string "--")
        <|> try (choice trigonometric)
     case fun of
         "sqrt" -> return (Root (Number 2))
@@ -65,6 +87,7 @@ oneArgExpr = do
         "sgn" -> return (Signum)
         "exp" -> return (Exp)
         "abs" -> return (Abs)
+        "--" -> return (Product (Number (-1)))
         _ -> if fun `elem` trigoNames
               then return (Trigo (read fun))
               else fail "no feasible 1arg function found"
