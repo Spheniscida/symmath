@@ -1,6 +1,6 @@
 # Symmath
 
-![Travis build status](https://api.travis-ci.org/Spheniscida/symmath.png)
+[![Travis build status](https://api.travis-ci.org/Spheniscida/symmath.png)](https://travis-ci.org/Spheniscida/symmath)
 
 Well, you've landed here and may be asking yourself now: What is this here? A CAS? An equation solver?
 Some kind of magic math software?
