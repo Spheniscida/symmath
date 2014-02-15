@@ -1,7 +1,5 @@
 module Symmath.Parse where
 
--- NOTE - This parser is deprecated as it does not support many terms!
-
 import Control.Applicative
 import Numeric (readFloat, readSigned)
 import Text.ParserCombinators.Parsec hiding (many, optional, (<|>))
