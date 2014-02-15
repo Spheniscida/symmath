@@ -38,14 +38,11 @@ Operators, values and variables are expected to be separated by at least one spa
 -}
 
 import Symmath.Terms
-import Symmath.Assoc as Assoc
+import Symmath.Util
 
 import Text.Parsec
-import Text.Parsec.Char
 import Text.Parsec.String
 
-import Data.Char
-import Data.List
 
 type ExprStack = [SymTerm]
 
@@ -90,23 +87,15 @@ constant =  many space >>
 oneArgExpr :: Parser (SymTerm -> SymTerm)
 oneArgExpr = do
     many space
-    fun <- try (string "sqrt")
-       <|> try (string "ln")
-       <|> try (string "sgn")
-       <|> try (string "exp")
-       <|> try (string "abs")
-       <|> try (string "--")
-       <|> try (choice trigonometric)
-    case fun of
-        "sqrt" -> return (Root (Number 2))
-        "ln" -> return (Ln)
-        "sgn" -> return (Signum)
-        "exp" -> return (Exp)
-        "abs" -> return (Abs)
-        "--" -> return (Product (Number (-1)))
-        _ -> if fun `elem` trigoNames
-              then return (Trigo (read fun))
-              else fail "no feasible 1arg function found"
+    -- Symmath.Util.(>><) "injects" the right-hand value into the monad:
+    -- (>><) :: Monad m => m a -> b -> m b. It's like (<$) for functors but works for the parser monad.
+    try (string "sqrt" >>< (Root (Number 2)) )
+    <|> try (string "ln" >>< Ln)
+    <|> try (string "sgn" >>< Signum)
+    <|> try (string "exp" >>< Exp)
+    <|> try (string "abs" >>< Abs)
+    <|> try (string "--" >>< (Product (Number (-1))) )
+    <|> try (choice trigonometric >>= return . Trigo . read)
 
 trigoNames = ["sin","cos","tan",
               "arcsin","arccos","arctan",

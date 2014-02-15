@@ -1,7 +1,6 @@
 module Symmath.Simplify where
 
 import Data.List
-import Data.Maybe
 
 import Symmath.Util
 import Symmath.Terms
