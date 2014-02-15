@@ -12,8 +12,10 @@ import Data.List
 
 type ExprStack = [SymTerm]
 
-upnToTerm :: String -> Either ParseError SymTerm
-upnToTerm = parse (upnP []) "<term>"
+upnToTerm :: String -> Either String SymTerm
+upnToTerm s = case parse (upnP []) "<term>" s of
+                Left e -> Left . show $ e
+                Right t -> Right t
 
 
 upnP :: ExprStack -> Parser SymTerm
