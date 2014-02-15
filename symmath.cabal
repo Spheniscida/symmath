@@ -17,4 +17,4 @@ Library
   other-modules:       Symmath.Assoc, Symmath.Constants, Symmath.Util, Symmath.Eval,
                        Symmath.Terms, Symmath.Functiontable, Symmath.Derivate, Symmath.Simplify, Symmath.Parse,
                        Symmath.UPNParse, Symmath.TermToTex
-  build-depends:       base ==4.6.*, mtl ==2.1.*, pretty ==1.1.*, parsec ==3.1.*, HUnit ==1.2.*, text >= 1
+  build-depends:       base >=4.6, mtl >=2.1, pretty >=1.1, parsec >=3.1, HUnit >=1.2, text >= 1
