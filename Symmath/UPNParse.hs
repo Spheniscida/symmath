@@ -22,15 +22,16 @@ upnP :: ExprStack -> Parser SymTerm
 upnP s =  try (number >>= \n -> upnP (n:s))
       <|> try (constant >>= \c -> upnP (c:s))
       <|> try (oneArgExpr >>= \f -> if length s < 1
-                                     then unexpected "one-arg function, without arguments"
+                                     then fail "one-arg function, without arguments"
                                      else let (x:xs) = s in upnP $ (f x):xs
               )
       <|> try (twoArgExpr >>= \f -> if length s < 2
-                                     then unexpected "two-arg function, with one or less arguments"
+                                     then fail "two-arg function, with one or less arguments"
                                      else let (x:y:xs) = s in upnP $ (f y x):xs
               )
       <|> try (variable >>= \v -> upnP (v:s))
-      <|> (spaces >> eof >> return (head s))
+      <|> try (spaces >> eof >> return (head s))
+      <?> "something else. There is something wrong with your syntax"
 
 number :: Parser SymTerm
 number = do
@@ -66,7 +67,7 @@ oneArgExpr = do
         "abs" -> return (Abs)
         _ -> if fun `elem` trigoNames
               then return (Trigo (read fun))
-              else unexpected "no feasible 1arg function found"
+              else fail "no feasible 1arg function found"
 
 trigoNames = ["sin","cos","tan",
               "arcsin","arccos","arctan",
@@ -88,7 +89,7 @@ twoArgExpr = do
         "*" -> return Product
         "/" -> return Fraction
         "^" -> return Power
-        _ -> unexpected "no feasible 2arg function found"
+        _ -> fail "no feasible 2arg function found"
 
 twoArgOpsP :: [Parser String]
 twoArgOpsP = map string twoArgOps
