@@ -45,13 +45,13 @@ mathFun :: SymParser
 mathFun = funName <*> parens
 
 funName :: Parser (SymTerm -> SymTerm)
-funName =      Abs       <$ string "abs"
-      <|>      Trigo Cos <$ string "cos"
-      <|>      Exp       <$ string "exp"
-      <|>      Ln        <$ string "ln"
-      <|> try (Signum    <$ string "sgn")
-      <|>      Trigo Sin <$ string "sin"
-      <|>      Trigo Tan <$ string "tan"
+funName =      Abs          <$ string "abs"
+      <|>      Trigo Cos    <$ string "cos"
+      <|>      Exp          <$ string "exp"
+      <|>      Ln           <$ string "ln"
+      <|> try (Signum       <$ string "sgn")
+      <|>      Trigo Sin    <$ string "sin"
+      <|>      Trigo Tan    <$ string "tan"
 
 mathConst :: SymParser
 mathConst =      Constant Euler <$ string "eu"
