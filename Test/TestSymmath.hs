@@ -89,9 +89,9 @@ testNumberFrac1 = TestCase $ assertEqual "3 / 4 == 3 / 4" (Fraction (Number 3) (
 testNumberFrac2 = TestCase $ assertEqual "9 / 27 == 1 / 3" (Fraction (Number 1) (Number 3)) (simplify (Fraction (Number 9) (Number 27)))
 testFrac3 = TestCase $ assertEqual "(x * y * z^3) / (y * z) == x * z^2" (x * (Power z 2)) (simplify (Fraction (x * y * z^3) (y * z)))
 
-testSquareRoot1 = TestCase $ assertEqual "sqrt(x) * sqrt(y) * sqrt(x) == x * y^(0.5)" (Product x (Power y (Number 0.5))) (simplify $ (Root x 2) * (Root y 2) * (Root x 2))
-testRoot1 = TestCase $ assertEqual "rt(x,3) == x^(1/3)" (Power x (Number $ 1/3)) (simplify (Root x 3))
-testRoot2 = TestCase $ assertEqual "rt(x,3) * rt(x,2) == x^((1/3) + (1/2))" (Power x (Number $ (1/2) + (1/3))) (simplify $ Product (Root x 3) (Root x 2))
+testSquareRoot1 = TestCase $ assertEqual "sqrt(x) * sqrt(y) * sqrt(x) == x * y^(0.5)" (Product x (Power y (Number 0.5))) (simplify $ (Root 2 x) * (Root 2 y) * (Root 2 x))
+testRoot1 = TestCase $ assertEqual "rt(x,3) == x^(1/3)" (Power x (Number $ 1/3)) (simplify (Root 3 x))
+testRoot2 = TestCase $ assertEqual "rt(x,3) * rt(x,2) == x^((1/3) + (1/2))" (Power x (Number $ (1/2) + (1/3))) (simplify $ Product (Root 3 x) (Root 2 x))
 
 testUPN1 = TestCase $ assertEqual "UPN: x 3 + y 4 + * -> (x+3) * (y+4)" (Right (Product (Sum x 3) (Sum y 4))) (upnToTerm "x 3 + y 4 + *")
 testUPN2 = TestCase $ assertEqual "UPN: x 3 + y 4 rt * -> (x+3) * (rt(y,4))" (Right (Product (Sum x 3) (Root y 4))) (upnToTerm "x 3 + y 4 rt *")
