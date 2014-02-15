@@ -1,7 +1,5 @@
 module Symmath.Parse where
 
--- NOTE - This parser is deprecated as it does not support many terms!
-
 import Control.Applicative
 import Numeric (readFloat, readSigned)
 import Text.ParserCombinators.Parsec hiding (many, optional, (<|>))
@@ -17,7 +15,10 @@ parseStr :: String -> Maybe SymTerm
 parseStr = eitherToMaybe . parse expr ""
 
 expr :: SymParser
-expr = buildExpressionParser opTable term <* eof
+expr = subExpr <* eof
+
+subExpr :: SymParser
+subExpr = buildExpressionParser opTable term
 
 opTable :: OperatorTable Char () SymTerm
 opTable = [[Infix (Power <$ char '^') AssocLeft]
@@ -36,19 +37,28 @@ mathTerm = parens
    <|> num
 
 parens :: SymParser
-parens = char '(' *> expr <* char ')'
+parens = char '(' *> subExpr <* char ')'
 
 mathFun :: SymParser
 mathFun = funName <*> parens
 
 funName :: Parser (SymTerm -> SymTerm)
-funName =      Abs       <$ string "abs"
-      <|>      Trigo Cos <$ string "cos"
-      <|>      Exp       <$ string "exp"
-      <|>      Ln        <$ string "ln"
-      <|> try (Signum    <$ string "sgn")
-      <|>      Trigo Sin <$ string "sin"
-      <|>      Trigo Tan <$ string "tan"
+funName = try (Abs          <$ string "abs")
+      <|> try (Trigo Arccos <$ string "arccos")
+      <|> try (Trigo Arcosh <$ string "arcosh")
+      <|> try (Trigo Arcsin <$ string "arcsin")
+      <|> try (Trigo Arctan <$ string "arctan")
+      <|> try (Trigo Arsinh <$ string "arsinh")
+      <|>      Trigo Artanh <$ string "artanh"
+      <|> try (Trigo Cosh   <$ string "cosh")
+      <|>      Trigo Cos    <$ string "cos"
+      <|>      Exp          <$ string "exp"
+      <|>      Ln           <$ string "ln"
+      <|> try (Signum       <$ string "sgn")
+      <|> try (Trigo Sinh   <$ string "sinh")
+      <|>      Trigo Sin    <$ string "sin"
+      <|> try (Trigo Tanh   <$ string "tanh")
+      <|>      Trigo Tan    <$ string "tan"
 
 mathConst :: SymParser
 mathConst =      Constant Euler <$ string "eu"
