@@ -46,24 +46,24 @@ import Text.Parsec.String
 
 type ExprStack = [SymTerm]
 
-upnToTerm :: String -> Either String SymTerm
-upnToTerm s = case parse (upnP []) "<term>" s of
+rpnToTerm :: String -> Either String SymTerm
+rpnToTerm s = case parse (rpnP []) "<term>" s of
                 Left e -> Left . show $ e
                 Right t -> Right t
 
 
-upnP :: ExprStack -> Parser SymTerm
-upnP s =  try (number >>= \n -> upnP (n:s))
-      <|> try (constant >>= \c -> upnP (c:s))
+rpnP :: ExprStack -> Parser SymTerm
+rpnP s =  try (number >>= \n -> rpnP (n:s))
+      <|> try (constant >>= \c -> rpnP (c:s))
       <|> try (oneArgExpr >>= \f -> if length s < 1
                                      then fail "one-arg function, without arguments"
-                                     else let (x:xs) = s in upnP $ (f x):xs
+                                     else let (x:xs) = s in rpnP $ (f x):xs
               )
       <|> try (twoArgExpr >>= \f -> if length s < 2
                                      then fail "two-arg function, with one or less arguments"
-                                     else let (x:y:xs) = s in upnP $ (f y x):xs
+                                     else let (x:y:xs) = s in rpnP $ (f y x):xs
               )
-      <|> try (variable >>= \v -> upnP (v:s))
+      <|> try (variable >>= \v -> rpnP (v:s))
       <|> try (spaces >> eof >> return (head s))
       <?> "something else. There is something wrong with your syntax"
 
@@ -85,17 +85,18 @@ constant =  many space >>
         <|> try (string "phi" >> return (Constant Phi)))
 
 oneArgExpr :: Parser (SymTerm -> SymTerm)
-oneArgExpr = do
-    many space
+oneArgExpr = many space >>
     -- Symmath.Util.(>><) "injects" the right-hand value into the monad:
     -- (>><) :: Monad m => m a -> b -> m b. It's like (<$) for functors but works for the parser monad.
-    try (string "sqrt" >>< (Root (Number 2)) )
+    (
+    try (string "sqrt" >>< (Root (Number 2)))
     <|> try (string "ln" >>< Ln)
     <|> try (string "sgn" >>< Signum)
     <|> try (string "exp" >>< Exp)
     <|> try (string "abs" >>< Abs)
     <|> try (string "--" >>< (Product (Number (-1))) )
     <|> try (choice trigonometric >>= return . Trigo . read)
+    )
 
 trigoNames = ["sin","cos","tan",
               "arcsin","arccos","arctan",

@@ -49,9 +49,9 @@ tests = TestList [
         , testRoot1
         , testRoot2
 
-        , testUPN1
-        , testUPN2
-        , testUPN3
+        , testrpn1
+        , testrpn2
+        , testrpn3
       ]
 
 testNumberSum1 = TestCase $ assertEqual "3 + 4 == 7" (Number 7) (simplify ((Number 3) + (Number 4)))
@@ -93,10 +93,10 @@ testSquareRoot1 = TestCase $ assertEqual "sqrt(x) * sqrt(y) * sqrt(x) == x * y^(
 testRoot1 = TestCase $ assertEqual "rt(x,3) == x^(1/3)" (Power x (Number $ 1/3)) (simplify (Root 3 x))
 testRoot2 = TestCase $ assertEqual "rt(x,3) * rt(x,2) == x^((1/3) + (1/2))" (Power x (Number $ (1/2) + (1/3))) (simplify $ Product (Root 3 x) (Root 2 x))
 
-testUPN1 = TestCase $ assertEqual "UPN: x 3 + y 4 + * -> (x+3) * (y+4)" (Right (Product (Sum x 3) (Sum y 4))) (upnToTerm "x 3 + y 4 + *")
-testUPN2 = TestCase $ assertEqual "UPN: x 3 + y 4 rt * -> (x+3) * (rt(y,4))" (Right (Product (Sum x 3) (Root y 4))) (upnToTerm "x 3 + y 4 rt *")
-testUPN3 = TestCase $ assertEqual "UPN: x ln 3 ln + y 4 eu ^ + * -> (ln(x) + ln(3)) * (y + 4^e)" (Right $ (Product (Sum (Ln (Variable 'x')) (Ln (Number 3.0))))
-    (Sum (Variable 'y') (Power (Number 4.0) (Constant Euler)))) (upnToTerm "x ln 3 ln + y 4 eu ^ + *")
+testrpn1 = TestCase $ assertEqual "rpn: x 3 + y 4 + * -> (x+3) * (y+4)" (Right (Product (Sum x 3) (Sum y 4))) (rpnToTerm "x 3 + y 4 + *")
+testrpn2 = TestCase $ assertEqual "rpn: x 3 + y 4 rt * -> (x+3) * (rt(y,4))" (Right (Product (Sum x 3) (Root y 4))) (rpnToTerm "x 3 + y 4 rt *")
+testrpn3 = TestCase $ assertEqual "rpn: x ln 3 ln + y 4 eu ^ + * -> (ln(x) + ln(3)) * (y + 4^e)" (Right $ (Product (Sum (Ln (Variable 'x')) (Ln (Number 3.0))))
+    (Sum (Variable 'y') (Power (Number 4.0) (Constant Euler)))) (rpnToTerm "x ln 3 ln + y 4 eu ^ + *")
 
 -- Parts
 
