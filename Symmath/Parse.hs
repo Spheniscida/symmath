@@ -17,7 +17,10 @@ parseStr :: String -> Maybe SymTerm
 parseStr = eitherToMaybe . parse expr ""
 
 expr :: SymParser
-expr = buildExpressionParser opTable term <* eof
+expr = subExpr <* eof
+
+subExpr :: SymParser
+subExpr = buildExpressionParser opTable term
 
 opTable :: OperatorTable Char () SymTerm
 opTable = [[Infix (Power <$ char '^') AssocLeft]
@@ -36,7 +39,7 @@ mathTerm = parens
    <|> num
 
 parens :: SymParser
-parens = char '(' *> expr <* char ')'
+parens = char '(' *> subExpr <* char ')'
 
 mathFun :: SymParser
 mathFun = funName <*> parens
