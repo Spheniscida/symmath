@@ -13,11 +13,27 @@ x: Push x
 3: Push 3
 *: Pop 3, (x+4); Push (3 * (x+4))
 
-Available commands/expressions are:
+An unary operator pops one element from the stack, a binary one two:
 
-    + * - / :: Standard arithmetic operators
+"ln(x)" -> "x ln" (ln is unary)
+"x^3" -> "x 3 ^" (^ is binary)
+
+Available operators:
+
+    + * - / ^ :: Standard arithmetic operators. "a b [op]" is the same as "a [op] b" (although the stack structure
+            could lead to another assumption)
     -- :: Unary minus (algebraic sign)
     rt :: Binary root operator: the nth root of x is written as "n x rt"
+    log :: Binary logBase operator: "base n log" = "log_{base}(n)"
+    ln, exp :: Unary "logarithmus naturalis"/exponential function (e^x) operator
+    sqrt, sgn, abs :: Unary operators for respectively the square root of a value, the Signum function and the
+                    absolute value operator.
+    sin, cos, tan, arcsin, arccos, arctan, sinh, cosh, tanh, arsinh, arcosh, artanh :: Trigonometric operators. Unary
+
+Variables are single chars in the ranges ['a'..'z'] and ['A'..'Z']. Actually, every value accepted by isAlpha is accepted
+as variable name.
+
+Operators, values and variables are expected to be separated by at least one space character (' ', \n, \t).
 
 -}
 
