@@ -1,7 +1,7 @@
 import Test.HUnit
 
 import Symmath.Terms
-import Symmath.UPNParse
+import Symmath.RPNParse
 import Symmath.Simplify
 
 main = do
