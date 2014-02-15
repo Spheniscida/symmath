@@ -45,12 +45,21 @@ mathFun :: SymParser
 mathFun = funName <*> parens
 
 funName :: Parser (SymTerm -> SymTerm)
-funName =      Abs          <$ string "abs"
+funName = try (Abs          <$ string "abs")
+      <|> try (Trigo Arccos <$ string "arccos")
+      <|> try (Trigo Arcosh <$ string "arcosh")
+      <|> try (Trigo Arcsin <$ string "arcsin")
+      <|> try (Trigo Arctan <$ string "arctan")
+      <|> try (Trigo Arsinh <$ string "arsinh")
+      <|>      Trigo Artanh <$ string "artanh"
+      <|> try (Trigo Cosh   <$ string "cosh")
       <|>      Trigo Cos    <$ string "cos"
       <|>      Exp          <$ string "exp"
       <|>      Ln           <$ string "ln"
       <|> try (Signum       <$ string "sgn")
+      <|> try (Trigo Sinh   <$ string "sinh")
       <|>      Trigo Sin    <$ string "sin"
+      <|> try (Trigo Tanh   <$ string "tanh")
       <|>      Trigo Tan    <$ string "tan"
 
 mathConst :: SymParser
