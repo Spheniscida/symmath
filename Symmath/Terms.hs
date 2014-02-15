@@ -34,6 +34,22 @@ data Trigo = Sin | Cos | Tan
 
 -- Instances
 
+instance Read Trigo where
+    readsPrec _ = parseTrigo
+        where parseTrigo "sin" = [(Sin,"")]
+              parseTrigo "cos" = [(Cos,"")]
+              parseTrigo "tan" = [(Tan,"")]
+              parseTrigo "arcsin" = [(Arcsin,"")]
+              parseTrigo "arccos" = [(Arccos,"")]
+              parseTrigo "arctan" = [(Arctan,"")]
+              parseTrigo "sinh" = [(Sinh,"")]
+              parseTrigo "cosh" = [(Cosh,"")]
+              parseTrigo "tanh" = [(Tanh,"")]
+              parseTrigo "arsinh" = [(Arsinh,"")]
+              parseTrigo "arcosh" = [(Arcosh,"")]
+              parseTrigo "artanh" = [(Artanh,"")]
+              parseTrigo _ = []
+
 showTerm :: SymTerm -> String
 showTerm (Number n) = show n
 showTerm (Variable v) = [v]
