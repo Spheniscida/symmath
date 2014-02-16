@@ -83,7 +83,7 @@ toLaTeX (Root t1 t2) = do
                 t1' <- toLaTeX t1
                 t2' <- toLaTeX t2
                 return $ (T.pack " \\sqrt{") <+> t1' <+> (T.pack "}{") <+> t2' <+> (T.pack "}")
-toLaTex (Abs t) = do
+toLaTeX (Abs t) = do
                 t' <- toLaTeX t
                 return $ (T.pack "||") <+> t' <+> (T.pack "||")
 

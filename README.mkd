@@ -2,17 +2,18 @@
 
 [![Travis build status](https://api.travis-ci.org/Spheniscida/symmath.png)](https://travis-ci.org/Spheniscida/symmath)
 
-Well, you've landed here and may be asking yourself now: What is this here? A CAS? An equation solver?
-Some kind of magic math software?
+Well, you've come here and may be askign yourself now: What is this here? A CAS? An equation solver?
+Some magical math stuff?
 
-The answer is: A bit of everything. We're trying to develop something (a library? An application? dunno...) which
+The answer is: A bit of everything. We're trying to develop something a software which
 is able to manipulate mathematical terms and equations.
 
-The question is: How does it manipulate them? There's no simple answer to that. It's kind of a framework with the basic
+How do we manipulate them? There's no simple answer to that. It's kind of a framework with the basic
 data types to represent terms and equations. We're putting some functions around it which may transform such terms, e.g.
 derivate or simplify them.
 
-If you would like to participate, it's not hard! Write your own function, add some clauses to the functions... Fork us :)
+If you would like to participate, it's not that hard! Write your own function, add some clauses to the functions... Just take a look at the
+"Get Started" section below.
 
 ## Standards and comparison
 
@@ -29,7 +30,16 @@ all the cutting-edge features in it.
 
 As symmath is fairly complex (like, it's not the Linux kernel but there *is* the possibility of introducing bugs and if they're
 in our codebase they are hard to discover and to fix). We use HUnit to test our algorithms on correctness and try to check them
-before checking in new code.
+before checking in new code. Nevertheless our test coverage is quite poor.
 
-If you're developing a feature in a module with existing tests (it's only `Simplify` yet), write one or two tests to cover your new
-code. Just to avoid fixing regressions dozens of commits later.
+If you're developing a feature in a module with existing tests, write one or two tests to cover your new
+code. Just to avoid having to fix regressions dozens of commits later.
+
+# Get Started
+
+The core of Symmath is the `SymTerm` data type defined in `Symmath.Terms`. It's basically an abstract syntax tree (AST) type.
+
+The Symmath module all have in common that they somehow create, transform or evaluate this AST; The `RPNParse` module creates `SymTerm`s
+from a RPN (reverse polish notation) string, the `Derivate` module derivates `SymTerm`, the `Simplify` module is working hard to
+simplify `SymTerm`s (e.g.: "x^a * x^a" -> "x^(2a)") and `TermToTex` converts `SymTerm`s to LaTeX code.
+
