@@ -19,7 +19,7 @@ data SymTerm = Number Double
              | Log SymTerm SymTerm
              | Abs SymTerm
              | Signum SymTerm
-             | Root SymTerm SymTerm
+             | Root SymTerm SymTerm -- Root a b = a'th root of g
              | UndefP Double SymTerm
             deriving (Eq,Show)
 
@@ -69,7 +69,7 @@ showTerm (Abs term) = '|' : showTerm term ++ "|"
 showTerm (Signum term) = "sgn(" ++ showTerm term ++ ")"
 showTerm (Root t1 t2) = "root(" ++ showTerm t1 ++ "," ++ showTerm t2 ++ ")"
 showTerm (UndefP p t) = "undefAt(" ++ show p ++ "," ++ showTerm t ++ ")"
-showTerm t = show t
+--showTerm t = show t
 
 instance Num SymTerm where
     (+) = Sum
