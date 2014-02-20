@@ -4,6 +4,8 @@ import Text.Printf
 
 import Text.PrettyPrint
 
+import qualified Data.Map.Strict as M
+
 import Symmath.Terms
 import Symmath.Eval
 
@@ -19,7 +21,7 @@ instance Show FuncValue where
 
 functionEval :: Double -> Double -> SymTerm -> Char -> [FuncValue]
 functionEval from ival term indep = map evalForX [from,from+ival..]
-    where evalForX x = case evalTermP term [(indep,x)] of
+    where evalForX x = case evalTermP term (M.insert indep x M.empty) of
                             Left _ -> Undefined
                             Right y -> Value y
 
@@ -46,7 +48,7 @@ multipleFunctions from to ival width acc terms indep = foldr1 ($$) . (header:) .
           colHeads = foldr1 (<+>) . map (text . printf ('%':show width++"s") . show) $ terms'
           headSepLine = foldr1 (<+>) $ replicate (length terms') (text . replicate width $ '-')
           calcLine x = map (calcFunc x) terms'
-          calcFunc x term = case evalTermP term [(indep,x)] of
+          calcFunc x term = case evalTermP term (M.insert indep x M.empty) of
                                 Right y -> printfFuncValue width acc $ Value y
                                 Left _ -> printfFuncValue width acc Undefined
           terms' = (Variable indep):terms
