@@ -2,7 +2,6 @@ module Symmath.Eval where
 
 import Symmath.Terms
 import Symmath.Constants
-import Symmath.Assoc
 import Symmath.Util
 
 import qualified Data.Map.Strict as M
@@ -11,6 +10,8 @@ import Data.Maybe
 import Control.Monad.Reader
 import Control.Monad.Error
 import Control.Monad.Identity
+
+type VarBind = M.Map Char Double
 
 evalTerm :: SymTerm -> Either String Double
 evalTerm = flip evalTermP $ M.empty
@@ -27,7 +28,7 @@ evalTermP t l = runIdentity (runErrorT (runReaderT (evalP t) l))
 evalP :: SymTerm -> EvalT
 evalP (Variable v) = do
     bindings <- ask
-    let val = lookupVar bindings v
+    let val = M.lookup v bindings
     if val == Nothing
         then throwError $ "Unbound variable: " ++ [v]
         else return (fromJust val)

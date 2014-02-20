@@ -1,6 +1,5 @@
 module Symmath 
 (
-    module Symmath.Assoc,
     module Symmath.Eval,
     module Symmath.Terms,
     module Symmath.Functiontable,
@@ -14,7 +13,6 @@ module Symmath
 )
  where
 
-import Symmath.Assoc
 import Symmath.Eval
 import Symmath.Terms
 import Symmath.Functiontable
