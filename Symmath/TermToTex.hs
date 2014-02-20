@@ -12,7 +12,7 @@ import Control.Monad.Reader
 data TexConf = TexConf { multdots :: Bool,
                          fracs :: Bool }
 
-defaultConf = TexConf { multdots = True, fracs = True }
+defaultTexConf = TexConf { multdots = True, fracs = True }
 
 (<+>) = T.append
 
