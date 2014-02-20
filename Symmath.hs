@@ -10,6 +10,7 @@ module Symmath
     module Symmath.Parse,
     module Symmath.RPNParse,
     module Symmath.TermToTex,
+    module Symmath.NumericIntegration
 )
  where
 
@@ -23,3 +24,5 @@ import Symmath.Util
 import Symmath.Parse
 import Symmath.RPNParse
 import Symmath.TermToTex
+import Symmath.NumericIntegration
+
