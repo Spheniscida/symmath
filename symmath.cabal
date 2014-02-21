@@ -1,5 +1,5 @@
 name:                symmath
-version:             0.1.5.0
+version:             0.1.6.0
 synopsis:            A library to work with mathematical terms, functions, equations etc.
 -- description:         
 homepage:            https://github.com/Spheniscida/symmath
@@ -14,7 +14,7 @@ cabal-version:       >=1.8
 
 Library
   exposed-modules:     Symmath
-  other-modules:       Symmath.Assoc, Symmath.Constants, Symmath.Util, Symmath.Eval,
+  other-modules:       Symmath.NumericIntegration, Symmath.Constants, Symmath.Util, Symmath.Eval,
                        Symmath.Terms, Symmath.Functiontable, Symmath.Derivate, Symmath.Simplify, Symmath.Parse,
                        Symmath.RPNParse, Symmath.TermToTex
-  build-depends:       base >=4.6, mtl >=2.1, pretty >=1.1, parsec >=3.1, HUnit >=1.2, text >= 1
+  build-depends:       base >=4.6, mtl >=2.1, pretty >=1.1, parsec >=3.1, HUnit >=1.2, text >= 1, containers >= 0.5
