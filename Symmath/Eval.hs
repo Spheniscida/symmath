@@ -8,8 +8,8 @@ import qualified Data.Map.Strict as M
 
 import Data.Maybe
 import Control.Monad.Reader
-import Control.Monad.Error
 import Control.Monad.Identity
+import Control.Monad.Except
 
 type VarBind = M.Map Char Double
 
@@ -20,10 +20,10 @@ evalTerm = flip evalTermP $ M.empty
 -- evalTermP uses an association list (carried by a reader monad) for variables
 ----------------------------------------------------------------------------------
 
-type EvalT = ReaderT VarBind (ErrorT String (Identity)) Double
+type EvalT = ReaderT VarBind (ExceptT String (Identity)) Double
 
 evalTermP :: SymTerm -> VarBind -> Either String Double
-evalTermP t l = runIdentity (runErrorT (runReaderT (evalP t) l))
+evalTermP t l = runIdentity (runExceptT (runReaderT (evalP t) l))
 
 evalP :: SymTerm -> EvalT
 evalP (Variable v) = do
